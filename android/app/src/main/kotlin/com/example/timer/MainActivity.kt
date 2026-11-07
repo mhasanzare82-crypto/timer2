@@ -36,6 +36,7 @@ class MainActivity : FlutterActivity() {
                         preferences.edit()
                             .putString("activity_title", values["title"] as? String ?: "")
                             .putLong("activity_start_time", (values["startTime"] as? Number)?.toLong() ?: 0L)
+                            .putLong("activity_end_time", (values["endTime"] as? Number)?.toLong() ?: 0L)
                             .apply()
                         ActivityTrackingWidgetProvider.updateAll(this)
                         result.success(null)
