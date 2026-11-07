@@ -9,6 +9,7 @@ import '../utils/time_formatter.dart';
 import 'countdown_timer_page.dart';
 import 'record_form_page.dart';
 import 'reports_page.dart';
+import 'alarm_reminders_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -447,6 +448,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     await _loadRecords();
   }
 
+  Future<void> _openReminders() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AlarmRemindersPage()),
+    );
+  }
+
   Future<void> _openReports() async {
     await Navigator.push(
       context,
@@ -569,6 +577,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         title: const Text('ثبت زمان'),
         centerTitle: true,
         actions: [
+          IconButton(
+            onPressed: _openReminders,
+            icon: const Icon(Icons.notifications_active_outlined),
+            tooltip: 'آلارم و یادآور',
+          ),
           IconButton(
             onPressed: _openReports,
             icon: const Icon(Icons.bar_chart),
