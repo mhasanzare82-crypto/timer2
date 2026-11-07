@@ -71,7 +71,10 @@ class _ReportsPageState extends State<ReportsPage> {
   final x=Excel.createExcel(),s=x['Activities'];s.appendRow(['title','category','durationSeconds','createdAt','activityDate','note'].map((e)=>TextCellValue(e)).toList());
   for(final r in all){s.appendRow([TextCellValue(r.title),TextCellValue(r.category),IntCellValue(r.durationSeconds),IntCellValue(r.createdAt.millisecondsSinceEpoch),IntCellValue(r.activityDate.millisecondsSinceEpoch),TextCellValue(r.note??'')]);}
   final xb=x.encode();if(xb!=null)a.addFile(ArchiveFile('activities.xlsx',xb.length,xb));
-  final z=ZipEncoder().encode(a);final f=await temp('timer2_backup.zip',z);await Share.shareXFiles([XFile(f.path)],text:'پشتیبان قابل بازیابی timer2');
+  final z=ZipEncoder().encode(a);
+  if(z==null){throw StateError('ساخت فایل ZIP ناموفق بود.');}
+  final f=await temp('timer2_backup.zip',z);
+  await Share.shareXFiles([XFile(f.path)],text:'پشتیبان قابل بازیابی timer2');
  }
  Future<void> restore()async{
   final p=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:['zip']);
