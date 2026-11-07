@@ -161,6 +161,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _syncActivityWidget() => HomeWidgetService.updateActivity(
         title: _subjectController.text.trim(),
         startTimeMilliseconds: _startTime?.millisecondsSinceEpoch,
+        endTimeMilliseconds: _endTime?.millisecondsSinceEpoch,
       );
 
   Future<void> _clearHomeState() async {
