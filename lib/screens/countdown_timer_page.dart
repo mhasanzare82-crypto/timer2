@@ -539,10 +539,9 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
             child: const Text('مکث'),
           ),
           const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: _reset,
-            child: const Text('بازنشانی'),
-          ),
+          OutlinedButton(onPressed: _stop, child: const Text('توقف')),
+          const SizedBox(height: 8),
+          OutlinedButton(onPressed: _reset, child: const Text('بازنشانی / صفر کردن')),
           if (_finished) ...[
             const SizedBox(height: 16),
             const Text(
