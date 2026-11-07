@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../utils/time_formatter.dart';
+import '../services/home_widget_service.dart';
 import 'countdown_timer_page.dart';
 import 'record_form_page.dart';
 import 'reports_page.dart';
+import 'alarm_reminders_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -118,6 +120,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       _stateLoaded = true;
+      await _syncActivityWidget();
 
       if (mounted) {
         setState(() {
@@ -149,16 +152,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _homeStateKey,
         jsonEncode(data),
       );
+      await _syncActivityWidget();
     } catch (_) {
       // در صورت بروز خطا، اطلاعات فعلی صفحه تغییر نمی‌کنند.
     }
   }
+
+  Future<void> _syncActivityWidget() => HomeWidgetService.updateActivity(
+        title: _subjectController.text.trim(),
+        startTimeMilliseconds: _startTime?.millisecondsSinceEpoch,
+        endTimeMilliseconds: _endTime?.millisecondsSinceEpoch,
+      );
 
   Future<void> _clearHomeState() async {
     try {
       await AppDatabase.instance.deleteAppState(
         _homeStateKey,
       );
+      await HomeWidgetService.updateActivity(title: '', startTimeMilliseconds: null);
     } catch (_) {
       _showMessage(
         'پاک‌کردن اطلاعات موقت فعالیت ناموفق بود.',
@@ -447,6 +458,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     await _loadRecords();
   }
 
+  Future<void> _openReminders() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AlarmRemindersPage()),
+    );
+  }
+
   Future<void> _openReports() async {
     await Navigator.push(
       context,
@@ -569,6 +587,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         title: const Text('ثبت زمان'),
         centerTitle: true,
         actions: [
+          IconButton(
+            onPressed: _openReminders,
+            icon: const Icon(Icons.notifications_active_outlined),
+            tooltip: 'آلارم و یادآور',
+          ),
           IconButton(
             onPressed: _openReports,
             icon: const Icon(Icons.bar_chart),

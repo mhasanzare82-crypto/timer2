@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../services/notification_service.dart';
+import '../services/home_widget_service.dart';
 import '../utils/time_formatter.dart';
 
 class CountdownTimerPage extends StatefulWidget {
@@ -64,6 +65,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         if (mounted) {
           setState(() => _loading = false);
         }
+        await _syncWidget();
         return;
       }
 
@@ -123,6 +125,8 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         _loading = false;
       });
 
+      await _syncWidget();
+
       if (_running) {
         _startTicker();
       }
@@ -161,7 +165,15 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       _stateKey,
       jsonEncode(data),
     );
+    await _syncWidget();
   }
+
+  Future<void> _syncWidget() => HomeWidgetService.updateCountdown(
+        title: _titleController.text.trim(),
+        running: _running,
+        remainingSeconds: _remainingSeconds,
+        endTimeMilliseconds: _endTime?.millisecondsSinceEpoch,
+      );
 
   void _startTicker() {
     _timer?.cancel();
@@ -296,6 +308,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     try {
       await NotificationService.instance.cancelCountdownFinished();
       await AppDatabase.instance.deleteAppState(_stateKey);
+      await _syncWidget();
     } catch (_) {
       _message('بازنشانی کامل تایمر ناموفق بود.');
     }
