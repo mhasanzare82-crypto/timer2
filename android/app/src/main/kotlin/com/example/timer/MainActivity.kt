@@ -6,6 +6,27 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        storeWidgetAction(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        storeWidgetAction(intent)
+    }
+
+    private fun storeWidgetAction(intent: Intent?) {
+        val action = intent?.action ?: return
+        if (action == ActivityTrackingWidgetProvider.ACTION_START ||
+            action == ActivityTrackingWidgetProvider.ACTION_PAUSE ||
+            action == ActivityTrackingWidgetProvider.ACTION_STOP) {
+            getSharedPreferences("TimerWidgetPrefs", Context.MODE_PRIVATE)
+                .edit().putString(ActivityTrackingWidgetProvider.KEY_PENDING_ACTION, action).apply()
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.example.timer/home_widgets")
