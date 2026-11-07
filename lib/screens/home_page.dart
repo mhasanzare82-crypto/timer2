@@ -34,6 +34,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   DateTime? _startTime;
   DateTime? _endTime;
+  DateTime? _resumeTime;
+  int _pausedSeconds = 0;
+
+  int get _elapsedSeconds => _pausedSeconds +
+      (_resumeTime == null ? 0 : _currentTime.difference(_resumeTime!).inSeconds.clamp(0, 1 << 30));
+
+  bool get _isTracking => _startTime != null && _endTime == null;
+  bool get _isRunning => _isTracking && _resumeTime != null;
 
   DateTime _currentTime = DateTime.now();
 
@@ -119,6 +127,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               );
 
         _subjectController.text = data['subject'] as String? ?? '';
+        _pausedSeconds = (data['pausedSeconds'] as num?)?.toInt() ?? 0;
+        final resumeMilliseconds = (data['resumeTime'] as num?)?.toInt();
+        _resumeTime = resumeMilliseconds == null
+            ? (_startTime != null && _endTime == null ? _startTime : null)
+            : DateTime.fromMillisecondsSinceEpoch(resumeMilliseconds);
       }
 
       _stateLoaded = true;
@@ -147,6 +160,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       'startTime': _startTime?.millisecondsSinceEpoch,
       'endTime': _endTime?.millisecondsSinceEpoch,
       'subject': _subjectController.text,
+      'pausedSeconds': _pausedSeconds,
+      'resumeTime': _resumeTime?.millisecondsSinceEpoch,
     };
 
     try {
@@ -231,20 +246,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _startActivity() async {
-    if (_saving) return;
-
-    final start = DateTime.now();
-
+    if (_saving || _isRunning) return;
+    final now = DateTime.now();
     setState(() {
-      _startTime = start;
+      _startTime ??= now;
+      _resumeTime = now;
       _endTime = null;
     });
-
     await _persistHomeState();
+    _showMessage(_pausedSeconds > 0 ? 'ثبت زمان ادامه یافت.' : 'زمان‌سنج شروع شد: ${_formatClock(now)}');
+  }
 
-    _showMessage(
-      'زمان شروع ثبت شد: ${_formatClock(start)}',
-    );
+  Future<void> _pauseActivity() async {
+    if (_saving || !_isRunning || _resumeTime == null) return;
+    final now = DateTime.now();
+    setState(() {
+      _pausedSeconds += now.difference(_resumeTime!).inSeconds;
+      _resumeTime = null;
+    });
+    await _persistHomeState();
+    _showMessage('زمان‌سنج موقتاً متوقف شد.');
   }
 
   Future<void> _endActivity() async {
@@ -263,12 +284,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
 
     setState(() {
+      if (_resumeTime != null) {
+        _pausedSeconds += end.difference(_resumeTime!).inSeconds;
+      }
+      _resumeTime = null;
       _endTime = end;
     });
 
     await _persistHomeState();
 
-    final seconds = end.difference(_startTime!).inSeconds;
+    final seconds = _pausedSeconds > 0 ? _pausedSeconds : end.difference(_startTime!).inSeconds;
 
     _showMessage(
       'زمان پایان ثبت شد. مدت فعالیت: '
@@ -341,6 +366,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     setState(() {
       _startTime = selectedStart;
       _endTime = selectedEnd;
+      _pausedSeconds = selectedEnd.difference(selectedStart).inSeconds;
+      _resumeTime = null;
     });
 
     await _persistHomeState();
@@ -377,7 +404,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       return;
     }
 
-    final durationSeconds = _endTime!.difference(_startTime!).inSeconds;
+    final durationSeconds = _pausedSeconds > 0
+        ? _pausedSeconds
+        : _endTime!.difference(_startTime!).inSeconds;
 
     if (durationSeconds <= 0) {
       _showMessage(
@@ -414,6 +443,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       setState(() {
         _startTime = null;
         _endTime = null;
+        _resumeTime = null;
+        _pausedSeconds = 0;
       });
 
       await _clearHomeState();
@@ -637,6 +668,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        const SizedBox(height: 10),
+                        Text(
+                          'مدت فعالیت: ${TimeFormatter.format(_elapsedSeconds)}',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Text(
                           _formatDate(_currentTime),
                           style: theme.textTheme.titleMedium,
@@ -654,27 +694,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 52,
-                          child: ElevatedButton.icon(
-                            onPressed: _saving ? null : _startActivity,
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('شروع'),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox(
-                          height: 52,
-                          child: ElevatedButton.icon(
-                            onPressed: _saving ? null : _endActivity,
-                            icon: const Icon(Icons.stop),
-                            label: const Text('پایان'),
-                          ),
-                        ),
-                      ),
+                      Expanded(child: SizedBox(height: 52, child: ElevatedButton.icon(
+                        onPressed: _saving || _isRunning ? null : _startActivity,
+                        icon: const Icon(Icons.play_arrow),
+                        label: Text(_pausedSeconds > 0 && !_isRunning ? 'ادامه' : 'شروع'),
+                      ))),
+                      const SizedBox(width: 8),
+                      Expanded(child: SizedBox(height: 52, child: OutlinedButton.icon(
+                        onPressed: _saving || !_isRunning ? null : _pauseActivity,
+                        icon: const Icon(Icons.pause),
+                        label: const Text('مکث'),
+                      ))),
+                      const SizedBox(width: 8),
+                      Expanded(child: SizedBox(height: 52, child: ElevatedButton.icon(
+                        onPressed: _saving || !_isTracking ? null : _endActivity,
+                        icon: const Icon(Icons.stop),
+                        label: const Text('پایان'),
+                      ))),
                     ],
                   ),
                   const SizedBox(height: 16),
