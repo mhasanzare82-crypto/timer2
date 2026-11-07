@@ -34,6 +34,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   bool _finished = false;
   bool _loading = true;
   bool _completionRecorded = false;
+  int _alarmRepeatCount = 1;
 
   @override
   void initState() {
@@ -79,6 +80,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       _running = data['running'] as bool? ?? false;
       _finished = data['finished'] as bool? ?? false;
       _completionRecorded = data['completionRecorded'] as bool? ?? false;
+      _alarmRepeatCount = (data['alarmRepeatCount'] as num?)?.toInt() ?? 1;
 
       final endMilliseconds = (data['endTime'] as num?)?.toInt();
 
@@ -154,6 +156,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       'running': _running,
       'finished': _finished,
       'completionRecorded': _completionRecorded,
+      'alarmRepeatCount': _alarmRepeatCount,
       'endTime': _endTime?.millisecondsSinceEpoch,
     };
 
@@ -461,6 +464,20 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
               hintText: 'مثلاً مطالعه',
               border: OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<int>(
+            value: _alarmRepeatCount,
+            decoration: const InputDecoration(labelText: 'تکرار هشدار پایان تایمر', border: OutlineInputBorder()),
+            items: const [
+              DropdownMenuItem(value: 1, child: Text('یک بار')),
+              DropdownMenuItem(value: 2, child: Text('دو بار')),
+              DropdownMenuItem(value: 3, child: Text('سه بار')),
+            ],
+            onChanged: (!_running && !_finished) ? (v) {
+              if (v != null) setState(() => _alarmRepeatCount = v);
+              _persistState();
+            } : null,
           ),
           const SizedBox(height: 16),
           const Text('زمان‌های آماده'),
