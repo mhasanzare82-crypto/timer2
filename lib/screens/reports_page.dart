@@ -37,6 +37,7 @@ class _ReportsPageState extends State<ReportsPage> {
   final current = range;
   final selected = await showPersianDateRangePicker(
     context: context,
+    initialDate: now,
     initialDateRange: JalaliRange(
       start: current == null ? Jalali.fromDateTime(DateTime.now().subtract(const Duration(days: 6))) : Jalali.fromDateTime(current.start),
       end: current == null ? now : Jalali.fromDateTime(current.end.subtract(const Duration(days: 1))),
