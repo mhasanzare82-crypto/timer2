@@ -114,6 +114,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         await NotificationService.instance.scheduleCountdownFinished(
           title: _titleController.text.trim(),
           endTime: _endTime!,
+          repeatCount: _alarmRepeatCount,
         );
       } else {
         _endTime = null;
