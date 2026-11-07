@@ -1,19 +1,33 @@
-# timer
+# مدیریت زمان و ثبت فعالیت‌ها
 
-A new Flutter project created with FlutLab - https://flutlab.io
+اپلیکیشن Flutter برای ثبت مدت فعالیت‌ها، گزارش‌گیری و تایمر معکوس با رابط فارسی و تقویم شمسی.
 
-## Getting Started
+## امکانات
+- چهار بخش اصلی: ثبت زمان، فعالیت‌ها، گزارش‌گیری و تایمر معکوس
+- تایمر فعالیت با شروع، مکث، ادامه و توقف
+- حالت فعالیت‌های پیوسته و ناپیوسته
+- تعریف و استفاده مجدد از نام فعالیت‌ها
+- ذخیره سوابق در SQLite
+- نمایش تاریخ‌ها به صورت شمسی و انتخاب تاریخ/بازه با تقویم جلالی
+- گزارش روزانه، هفتگی، ماهانه و بازه دلخواه برای همه فعالیت‌ها یا یک فعالیت
+- خروجی Excel
+- پشتیبان ZIP شامل JSON قابل بازیابی و فایل Excel
+- تایمر معکوس با زمان‌های آماده، شروع، مکث، توقف و بازنشانی
+- ثبت فعالیت پس از پایان تایمر و اعلان پایان با امکان تکرار یک تا سه بار
 
-A few resources to get you started if this is your first Flutter project:
+## اجرا
+```bash
+flutter pub get
+flutter run
+```
 
-- https://flutter.dev/docs/get-started/codelab
-- https://flutter.dev/docs/cookbook
+## پشتیبان‌گیری و بازیابی
+از تب گزارش‌گیری گزینه «خروجی پشتیبان ZIP» را انتخاب کنید. فایل ZIP شامل `backup.json` و `activities.xlsx` است. برای وارد کردن اطلاعات، فایل ZIP را از گزینه «وارد کردن پشتیبان ZIP» انتخاب کنید. رکوردهای پشتیبان به اطلاعات موجود اضافه می‌شوند و جایگزین آن‌ها نمی‌شوند.
 
-For help getting started with Flutter, view our
-https://flutter.dev/docs, which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
-## Getting Started: FlutLab - Flutter Online IDE
-
-- How to use FlutLab? Please, view our https://flutlab.io/docs
-- Join the discussion and conversation on https://flutlab.io/residents
+## وابستگی‌های مهم
+- sqflite
+- persian_datetime_picker و shamsi_date
+- excel
+- archive
+- file_picker و share_plus
+- flutter_local_notifications
