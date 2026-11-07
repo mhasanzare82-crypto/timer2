@@ -205,11 +205,6 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
 
     final title = _titleController.text.trim();
 
-    if (title.isEmpty) {
-      _message('عنوان فعالیت را وارد کنید.');
-      return;
-    }
-
     if (_finished) {
       _message('برای شروع تایمر جدید، ابتدا بازنشانی کنید.');
       return;
@@ -245,7 +240,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       await _persistState();
 
       await NotificationService.instance.scheduleCountdownFinished(
-        title: title,
+        title: title.isEmpty ? 'فعالیت زمان‌بندی‌شده' : title,
         endTime: _endTime!,
       );
 
@@ -345,18 +340,44 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   Future<void> _completeTimer({
     required bool showNotification,
   }) async {
-    if (_completionRecorded) return;
+    if (_completionRecorded || !mounted) return;
 
-    final title = _titleController.text.trim();
-
-    if (title.isEmpty || _initialSeconds <= 0) return;
+    final subjectController = TextEditingController(text: _titleController.text.trim());
+    final title = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('پایان تایمر'),
+        content: TextField(
+          controller: subjectController,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            labelText: 'موضوع فعالیت',
+            hintText: 'عنوان فعالیت را وارد کنید',
+          ),
+          onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('بعداً'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, subjectController.text.trim()),
+            child: const Text('ثبت فعالیت'),
+          ),
+        ],
+      ),
+    );
+    subjectController.dispose();
+    if (title == null || title.trim().isEmpty || !mounted) return;
 
     final now = DateTime.now();
-
     try {
       await AppDatabase.instance.insertRecord(
         TimeRecord(
-          title: title,
+          title: title.trim(),
           category: 'تایمر',
           durationSeconds: _initialSeconds,
           createdAt: now,
@@ -364,19 +385,14 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
           note: 'ثبت خودکار پس از پایان تایمر',
         ),
       );
-
+      _titleController.text = title.trim();
       _completionRecorded = true;
       await _persistState();
-
       if (!mounted) return;
-
       setState(() {});
-
-      _message('تایمر تمام شد و فعالیت ذخیره شد.');
+      _message('فعالیت با موفقیت در سوابق ذخیره شد.');
     } catch (_) {
-      if (mounted) {
-        _message('تایمر تمام شد، اما ذخیرهٔ فعالیت ناموفق بود.');
-      }
+      if (mounted) _message('تایمر تمام شد، اما ذخیرهٔ فعالیت ناموفق بود.');
     }
   }
 
@@ -494,9 +510,17 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
           if (_finished) ...[
             const SizedBox(height: 16),
             const Text(
-              'زمان به پایان رسید. فعالیت در سوابق ذخیره شد.',
+              _completionRecorded
+                  ? 'زمان به پایان رسید و فعالیت ذخیره شد.'
+                  : 'زمان به پایان رسید. موضوع فعالیت را ثبت کنید.',
               textAlign: TextAlign.center,
             ),
+            if (!_completionRecorded)
+              FilledButton.icon(
+                onPressed: () => _completeTimer(showNotification: false),
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('ثبت موضوع فعالیت'),
+              ),
           ],
         ],
       ),
