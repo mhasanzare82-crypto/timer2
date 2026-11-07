@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
@@ -16,6 +17,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _tab = 0;
   List<TimeRecord> _records = [];
+  List<String> _activityNames = [];
   Timer? _ticker;
   DateTime _now = DateTime.now();
   DateTime? _startedAt;
@@ -56,7 +58,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _load() async {
     final rows = await AppDatabase.instance.getAllRecords();
-    if (mounted) setState(() => _records = rows);
+    final savedNames = await AppDatabase.instance.getAppState('activity_names');
+    final names = <String>{...rows.map((e) => e.title)};
+    if (savedNames != null) {
+      try { names.addAll((jsonDecode(savedNames) as List).cast<String>()); } catch (_) {}
+    }
+    if (mounted) setState(() { _records = rows; _activityNames = names.toList()..sort(); });
   }
 
   String _duration(Duration d) => TimeFormatter.clock(d.inSeconds);
@@ -103,13 +110,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('ثبت فعالیت'),
-        content: TextField(
-          controller: titleController,
-          autofocus: true,
-          textDirection: TextDirection.rtl,
-          decoration: const InputDecoration(labelText: 'نام فعالیت', hintText: 'مثلاً مطالعه'),
-          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
-        ),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: titleController,
+            autofocus: true,
+            textDirection: TextDirection.rtl,
+            decoration: const InputDecoration(labelText: 'نام فعالیت', hintText: 'مثلاً مطالعه'),
+            onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+          ),
+          if (_activityNames.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Align(alignment: Alignment.centerRight, child: Text('نام‌های قبلی')),
+            Wrap(spacing: 6, children: _activityNames.map((name) => ActionChip(
+              label: Text(name),
+              onPressed: () => titleController.text = name,
+            )).toList()),
+          ],
+        ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
           FilledButton(onPressed: () => Navigator.pop(ctx, titleController.text.trim()), child: const Text('ذخیره')),
@@ -199,18 +216,42 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _addActivityName() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('افزودن نام فعالیت'),
+      content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'نام فعالیت')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('ذخیره')),
+      ],
+    ));
+    controller.dispose();
+    if (name == null || name.isEmpty || _activityNames.contains(name)) return;
+    final names = [..._activityNames, name]..sort();
+    await AppDatabase.instance.saveAppState('activity_names', jsonEncode(names));
+    if (mounted) setState(() => _activityNames = names);
+  }
+
   Widget _activitiesTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Row(children: [
           const Expanded(child: Text('فعالیت‌ها', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold))),
+          OutlinedButton.icon(onPressed: _addActivityName, icon: const Icon(Icons.add), label: const Text('نام جدید')),
+          const SizedBox(width: 6),
           FilledButton.icon(onPressed: () async {
             await Navigator.push(context, MaterialPageRoute(builder: (_) => const RecordFormPage()));
             _load();
-          }, icon: const Icon(Icons.add), label: const Text('ثبت دستی')),
+          }, icon: const Icon(Icons.edit_calendar), label: const Text('ثبت دستی')),
         ]),
         const SizedBox(height: 12),
+        if (_activityNames.isNotEmpty) ...[
+          const Text('نام‌های ذخیره‌شده', style: TextStyle(fontWeight: FontWeight.bold)),
+          Wrap(spacing: 6, children: _activityNames.map((name) => Chip(label: Text(name))).toList()),
+          const SizedBox(height: 8),
+        ],
         if (_records.isEmpty) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('هنوز فعالیتی ثبت نشده است.'))),
         ..._records.map((r) => Card(child: ListTile(
           leading: const CircleAvatar(child: Icon(Icons.timelapse)),
