@@ -63,9 +63,25 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
     if (!_daily && !_scheduledAt.isAfter(DateTime.now())) { _showMessage('زمان یادآور باید در آینده باشد.'); return; }
     setState(() => _saving = true);
     try {
-      final id = DateTime.now().microsecondsSinceEpoch.remainder(2147483647);
-      final reminder = <String, dynamic>{'id': id, 'title': title, 'scheduledAt': _scheduledAt.millisecondsSinceEpoch, 'daily': _daily};
-      await NotificationService.instance.scheduleReminder(id: id, title: title, scheduledAt: _scheduledAt, daily: _daily);
+      var scheduledAt = _scheduledAt;
+      if (_daily && !scheduledAt.isAfter(DateTime.now())) {
+        scheduledAt = DateTime(scheduledAt.year, scheduledAt.month,
+            scheduledAt.day + 1, scheduledAt.hour, scheduledAt.minute);
+      }
+      final usedIds = _reminders.map((item) => item['id'] as int).toSet();
+      var id = 2000;
+      while (usedIds.contains(id)) {
+        id++;
+      }
+      final reminder = <String, dynamic>{
+        'id': id,
+        'title': title,
+        'scheduledAt': scheduledAt.millisecondsSinceEpoch,
+        'daily': _daily,
+      };
+      await NotificationService.instance.scheduleReminder(
+        id: id, title: title, scheduledAt: scheduledAt, daily: _daily,
+      );
       _reminders.add(reminder);
       await _persist();
       _titleController.clear();
