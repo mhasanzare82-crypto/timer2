@@ -64,7 +64,8 @@ class _ReportsPageState extends State<ReportsPage> {
   final bytes=x.encode();if(bytes==null)return;final f=await temp('gozaresh.xlsx',bytes);await Share.shareXFiles([XFile(f.path)],text:'گزارش فعالیت‌ها');
  }
  Future<void> backup()async{
-  final data={'format':'timer2-backup','version':1,'records':all.map((r)=>{'title':r.title,'category':r.category,'durationSeconds':r.durationSeconds,'createdAt':r.createdAt.millisecondsSinceEpoch,'activityDate':r.activityDate.millisecondsSinceEpoch,'note':r.note}).toList()};
+  final savedNames = await AppDatabase.instance.getAppState('activity_names');
+  final data={'format':'timer2-backup','version':1,'activityNames': savedNames == null ? <String>[] : (jsonDecode(savedNames) as List), 'records':all.map((r)=>{'title':r.title,'category':r.category,'durationSeconds':r.durationSeconds,'createdAt':r.createdAt.millisecondsSinceEpoch,'activityDate':r.activityDate.millisecondsSinceEpoch,'note':r.note}).toList()};
   final raw=utf8.encode(const JsonEncoder.withIndent('  ').convert(data));final a=Archive()..addFile(ArchiveFile('backup.json',raw.length,raw));
   final x=Excel.createExcel(),s=x['Activities'];s.appendRow(['title','category','durationSeconds','createdAt','activityDate','note'].map((e)=>TextCellValue(e)).toList());
   for(final r in all){s.appendRow([TextCellValue(r.title),TextCellValue(r.category),IntCellValue(r.durationSeconds),IntCellValue(r.createdAt.millisecondsSinceEpoch),IntCellValue(r.activityDate.millisecondsSinceEpoch),TextCellValue(r.note??'')]);}
@@ -79,6 +80,8 @@ class _ReportsPageState extends State<ReportsPage> {
    final list=(d['records'] as List).cast<Map<String,dynamic>>();
    final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('بازیابی پشتیبان'),content:Text('${list.length} فعالیت پیدا شد. به اطلاعات فعلی اضافه شوند؟'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('انصراف')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('بازیابی'))]));
    if(ok!=true)return;
+   final importedNames = (d['activityNames'] as List? ?? const []).cast<String>();
+   if (importedNames.isNotEmpty) await AppDatabase.instance.saveAppState('activity_names', jsonEncode(importedNames.toSet().toList()));
    for(final m in list){await AppDatabase.instance.insertRecord(TimeRecord(title:m['title'],category:m['category'],durationSeconds:(m['durationSeconds'] as num).toInt(),createdAt:DateTime.fromMillisecondsSinceEpoch((m['createdAt'] as num).toInt()),activityDate:DateTime.fromMillisecondsSinceEpoch((m['activityDate'] as num).toInt()),note:m['note'] as String?));}
    await load();if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('بازیابی انجام شد.')));
   }catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('فایل پشتیبان معتبر نیست.')));}
