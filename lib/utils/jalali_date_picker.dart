@@ -8,7 +8,7 @@ Future<DateTime?> showJalaliDatePicker({
   final initial = Jalali.fromDateTime(initialDate);
   var year = initial.year;
   var month = initial.month;
-  var day = initial.day.clamp(1, month <= 6 ? 31 : (month <= 11 ? 30 : 29));
+  var day = initial.day.clamp(1, month <= 6 ? 31 : (month <= 11 ? 30 : 29)).toInt();
 
   return showDialog<DateTime>(
     context: context,
