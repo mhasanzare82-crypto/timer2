@@ -12,6 +12,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../utils/time_formatter.dart';
+import '../utils/jalali_date_picker.dart';
 
 enum _Period { day, week, month, custom }
 
@@ -90,8 +91,7 @@ class _ReportsPageState extends State<ReportsPage> {
 
   Future<void> _pickDate({required bool start}) async {
     final current = start ? _from : _to;
-    final selected = await showDatePicker(context: context, initialDate: current,
-      firstDate: DateTime(2000), lastDate: DateTime(2100));
+    final selected = await showJalaliDatePicker(context: context, initialDate: current);
     if (selected == null || !mounted) return;
     setState(() {
       if (start) {
