@@ -4,6 +4,7 @@ import 'package:archive/archive.dart';
 import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../database/app_database.dart';
@@ -31,9 +32,30 @@ class _ReportsPageState extends State<ReportsPage> {
  void apply(){final b=bounds; final r=all.where((e)=>!e.activityDate.isBefore(b.start)&&e.activityDate.isBefore(b.end)&&(activity=='همه فعالیت‌ها'||e.title==activity)).toList();if(mounted)setState(()=>rows=r);}
  int get total=>rows.fold(0,(s,e)=>s+e.durationSeconds);
  Future<void> chooseRange() async {
-  final now=DateTime.now(); final r=await showDateRangePicker(context:context,firstDate:DateTime(2000),lastDate:DateTime(2100),initialDateRange:range??DateTimeRange(start:now.subtract(const Duration(days:6)),end:now),helpText:'انتخاب بازه گزارش',cancelText:'انصراف',confirmText:'تأیید');
-  if(r!=null){setState(()=>range=DateTimeRange(start:r.start,end:r.end.add(const Duration(days:1))));apply();}
+  final now = Jalali.now();
+  final current = range;
+  final selected = await showPersianDateRangePicker(
+    context: context,
+    initialDateRange: JalaliRange(
+      start: current == null ? now.subtract(const Duration(days: 6)) : Jalali.fromDateTime(current.start),
+      end: current == null ? now : Jalali.fromDateTime(current.end.subtract(const Duration(days: 1))),
+    ),
+    firstDate: Jalali(1300, 1),
+    lastDate: Jalali(1500, 12),
+    helpText: 'انتخاب بازه شمسی',
+    cancelText: 'انصراف',
+    confirmText: 'تأیید',
+    locale: const Locale('fa', 'IR'),
+    textDirection: TextDirection.rtl,
+  );
+  if (selected != null) {
+    final startDate = selected.start.toDateTime();
+    final endDate = selected.end.toDateTime().add(const Duration(days: 1));
+    setState(() => range = DateTimeRange(start: startDate, end: endDate));
+    apply();
+  }
  }
+
  Future<File> temp(String name,List<int> bytes)async{final d=await getTemporaryDirectory();return File('${d.path}/$name').writeAsBytes(bytes,flush:true);}
  Future<void> excelExport()async{
   final x=Excel.createExcel(),s=x['گزارش فعالیت'];s.appendRow(['عنوان','دسته‌بندی','تاریخ شمسی','مدت (ثانیه)','مدت','یادداشت'].map((e)=>TextCellValue(e)).toList());
