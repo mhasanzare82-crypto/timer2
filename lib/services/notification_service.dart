@@ -13,6 +13,7 @@ class NotificationService {
   bool _initialized = false;
 
   static const int _countdownNotificationId = 1001;
+  static const int _maxAlarmRepeats = 3;
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -37,7 +38,7 @@ class NotificationService {
     _initialized = true;
   }
 
-  Future<void> showCountdownFinished(String title) async {
+  Future<void> showCountdownFinished(String title, {int repeatCount = 1}) async {
     await initialize();
 
     const androidDetails = AndroidNotificationDetails(
@@ -69,7 +70,7 @@ class NotificationService {
     await initialize();
 
     if (!endTime.isAfter(DateTime.now())) {
-      await showCountdownFinished(title);
+      await showCountdownFinished(title, repeatCount: repeatCount);
       return;
     }
 
@@ -91,7 +92,7 @@ class NotificationService {
       _countdownNotificationId,
       'پایان تایمر',
       'زمان فعالیت «$title» به پایان رسید.',
-      tz.TZDateTime.from(endTime, tz.local),
+      tz.TZDateTime.from(endTime.add(Duration(seconds: i * 10)), tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
