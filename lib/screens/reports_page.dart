@@ -73,7 +73,9 @@ class _ReportsPageState extends State<ReportsPage> {
   final z=ZipEncoder().encode(a);final f=await temp('timer2_backup.zip',z);await Share.shareXFiles([XFile(f.path)],text:'پشتیبان قابل بازیابی timer2');
  }
  Future<void> restore()async{
-  final p=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:['zip']);if(p==null||p.files.single.path==null)return;
+  final p=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:['zip']);
+  if(p==null||p.files.single.path==null)return;
+  if(!mounted)return;
   try{
    final a=ZipDecoder().decodeBytes(await File(p.files.single.path!).readAsBytes());final e=a.files.firstWhere((x)=>x.name=='backup.json');final d=jsonDecode(utf8.decode(e.content as List<int>)) as Map<String,dynamic>;
    if(d['format']!='timer2-backup'||d['version']!=1)throw Exception('bad backup');
