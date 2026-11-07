@@ -11,19 +11,6 @@ import android.view.View
 import android.widget.RemoteViews
 
 class ActivityTrackingWidgetProvider : AppWidgetProvider() {
-    override fun onReceive(context: Context, intent: Intent) {
-        when (intent.action) {
-            ACTION_START, ACTION_PAUSE, ACTION_STOP -> {
-                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                    .edit().putString(KEY_PENDING_ACTION, intent.action).apply()
-                val launch = Intent(context, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                }
-                context.startActivity(launch)
-            }
-            else -> super.onReceive(context, intent)
-        }
-    }
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         ids.forEach { updateWidget(context, manager, it) }
@@ -43,8 +30,8 @@ class ActivityTrackingWidgetProvider : AppWidgetProvider() {
         }
 
         private fun actionIntent(context: Context, action: String, requestCode: Int): PendingIntent {
-            val intent = Intent(context, ActivityTrackingWidgetProvider::class.java).setAction(action)
-            return PendingIntent.getBroadcast(
+            val intent = Intent(context, MainActivity::class.java).setAction(action)
+            return PendingIntent.getActivity(
                 context, requestCode, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
