@@ -6,6 +6,16 @@ class HomeWidgetService {
   static const MethodChannel _channel =
       MethodChannel('com.example.timer/home_widgets');
 
+  static Future<String?> consumePendingActivityAction() async {
+    try {
+      return await _channel.invokeMethod<String>('consumePendingActivityAction');
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
   static Future<void> updateCountdown({
     required String title,
     required bool running,
