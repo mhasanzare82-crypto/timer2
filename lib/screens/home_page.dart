@@ -72,6 +72,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _initializePage() async {
     await _restoreHomeState();
     await _loadRecords();
+    await _handleWidgetAction();
   }
 
   @override
@@ -84,6 +85,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       });
 
       _loadRecords();
+      if (_stateLoaded) _handleWidgetAction();
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden ||
         state == AppLifecycleState.paused) {
@@ -99,6 +101,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _subjectController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> _handleWidgetAction() async {
+    final action = await HomeWidgetService.consumePendingActivityAction();
+    if (!mounted || action == null) return;
+    switch (action) {
+      case 'com.example.timer.ACTIVITY_START':
+        await _startActivity();
+        break;
+      case 'com.example.timer.ACTIVITY_PAUSE':
+        await _pauseActivity();
+        break;
+      case 'com.example.timer.ACTIVITY_STOP':
+        await _endActivity();
+        break;
+    }
   }
 
   Future<void> _restoreHomeState() async {
