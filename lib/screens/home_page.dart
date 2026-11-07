@@ -189,7 +189,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
     );
     titleController.dispose();
-    if (title == null || title.isEmpty) return;
+    if (title == null || title.isEmpty) {
+      return;
+    }
     setState(() => _busy = true);
     try {
       final start = _sessionStartedAt ?? end.subtract(Duration(seconds: seconds));
