@@ -17,6 +17,7 @@ dependencies:
   flutter_local_notifications: ^19.5.0
   timezone: ^0.10.1
   shamsi_date: ^1.0.3
+  persian_datetime_picker: ^3.1.0
   excel: ^4.0.6
   archive: ^3.6.1
   file_picker: ^8.1.7
