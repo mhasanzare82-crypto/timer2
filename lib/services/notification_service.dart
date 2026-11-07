@@ -101,4 +101,34 @@ class NotificationService {
     await initialize();
     await _plugin.cancel(_countdownNotificationId);
   }
+
+  Future<void> scheduleReminder({
+    required int id,
+    required String title,
+    required DateTime scheduledAt,
+    required bool daily,
+  }) async {
+    await initialize();
+    if (!daily && !scheduledAt.isAfter(DateTime.now())) {
+      throw ArgumentError('زمان یادآور باید در آینده باشد.');
+    }
+    const androidDetails = AndroidNotificationDetails(
+      'reminders_channel', 'یادآورها',
+      channelDescription: 'اعلان یادآورهای ثبت‌شده',
+      importance: Importance.max, priority: Priority.high,
+      playSound: true, enableVibration: true,
+    );
+    const details = NotificationDetails(android: androidDetails);
+    await _plugin.zonedSchedule(
+      id, 'یادآوری', title,
+      tz.TZDateTime.from(scheduledAt, tz.local), details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: daily ? DateTimeComponents.time : null,
+    );
+  }
+
+  Future<void> cancelReminder(int id) async {
+    await initialize();
+    await _plugin.cancel(id);
+  }
 }
