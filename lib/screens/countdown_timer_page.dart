@@ -34,6 +34,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   bool _finished = false;
   bool _loading = true;
   bool _completionRecorded = false;
+  int _alarmRepeatCount = 1;
 
   @override
   void initState() {
@@ -79,6 +80,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       _running = data['running'] as bool? ?? false;
       _finished = data['finished'] as bool? ?? false;
       _completionRecorded = data['completionRecorded'] as bool? ?? false;
+      _alarmRepeatCount = (data['alarmRepeatCount'] as num?)?.toInt() ?? 1;
 
       final endMilliseconds = (data['endTime'] as num?)?.toInt();
 
@@ -112,6 +114,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         await NotificationService.instance.scheduleCountdownFinished(
           title: _titleController.text.trim(),
           endTime: _endTime!,
+          repeatCount: _alarmRepeatCount,
         );
       } else {
         _endTime = null;
@@ -154,6 +157,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       'running': _running,
       'finished': _finished,
       'completionRecorded': _completionRecorded,
+      'alarmRepeatCount': _alarmRepeatCount,
       'endTime': _endTime?.millisecondsSinceEpoch,
     };
 
@@ -192,11 +196,6 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     if (_loading || _running) return;
 
     final title = _titleController.text.trim();
-
-    if (title.isEmpty) {
-      _message('عنوان فعالیت را وارد کنید.');
-      return;
-    }
 
     if (_finished) {
       _message('برای شروع تایمر جدید، ابتدا بازنشانی کنید.');
@@ -281,6 +280,33 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     }
   }
 
+  Widget _preset(String label, int seconds) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: (!_running && !_finished) ? () {
+        setState(() {
+          _hoursController.text = (seconds ~/ 3600).toString();
+          _minutesController.text = ((seconds % 3600) ~/ 60).toString();
+          _secondsController.text = (seconds % 60).toString();
+          _initialSeconds = seconds;
+          _remainingSeconds = seconds;
+        });
+        _persistState();
+      } : null,
+    );
+  }
+
+  Future<void> _stop() async {
+    _timer?.cancel();
+    if (_endTime != null) {
+      final left = (_endTime!.difference(DateTime.now()).inMilliseconds / 1000).ceil();
+      _remainingSeconds = left > 0 ? left : 0;
+    }
+    setState(() { _running = false; _endTime = null; });
+    await NotificationService.instance.cancelCountdownFinished();
+    await _persistState();
+  }
+
   Future<void> _reset() async {
     _timer?.cancel();
 
@@ -334,10 +360,33 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   }) async {
     if (_completionRecorded) return;
 
-    final title = _titleController.text.trim();
-
-    if (title.isEmpty || _initialSeconds <= 0) return;
-
+    if (_initialSeconds <= 0) return;
+    final titleController = TextEditingController(text: _titleController.text.trim());
+    final title = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('زمان به پایان رسید'),
+        content: TextField(
+          controller: titleController,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'موضوع فعالیت'),
+          onSubmitted: (value) => Navigator.pop(ctx, value.trim()),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, titleController.text.trim()),
+            child: const Text('ثبت فعالیت'),
+          ),
+        ],
+      ),
+    );
+    titleController.dispose();
+    if (title == null || title.trim().isEmpty) {
+      _message('برای ذخیره فعالیت، موضوع را وارد کنید.');
+      return;
+    }
+    _titleController.text = title.trim();
     final now = DateTime.now();
 
     try {
@@ -406,7 +455,29 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('مدت‌زمان تایمر'),
+          DropdownButtonFormField<int>(
+            value: _alarmRepeatCount,
+            decoration: const InputDecoration(labelText: 'تکرار هشدار پایان تایمر', border: OutlineInputBorder()),
+            items: const [
+              DropdownMenuItem(value: 1, child: Text('یک بار')),
+              DropdownMenuItem(value: 2, child: Text('دو بار')),
+              DropdownMenuItem(value: 3, child: Text('سه بار')),
+            ],
+            onChanged: (!_running && !_finished) ? (v) {
+              if (v != null) setState(() => _alarmRepeatCount = v);
+              _persistState();
+            } : null,
+          ),
+          const SizedBox(height: 16),
+          const Text('زمان‌های آماده'),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _preset('۵ دقیقه', 300), _preset('۱۰ دقیقه', 600),
+            _preset('۱۵ دقیقه', 900), _preset('۲۵ دقیقه', 1500),
+            _preset('۳۰ دقیقه', 1800), _preset('۱ ساعت', 3600),
+          ]),
+          const SizedBox(height: 18),
+          const Text('مدت‌زمان دلخواه'),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -474,10 +545,9 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
             child: const Text('مکث'),
           ),
           const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: _reset,
-            child: const Text('بازنشانی'),
-          ),
+          OutlinedButton(onPressed: _stop, child: const Text('توقف')),
+          const SizedBox(height: 8),
+          OutlinedButton(onPressed: _reset, child: const Text('بازنشانی / صفر کردن')),
           if (_finished) ...[
             const SizedBox(height: 16),
             const Text(

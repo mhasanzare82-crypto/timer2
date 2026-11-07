@@ -4,43 +4,25 @@ import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   NotificationService._();
-
   static final NotificationService instance = NotificationService._();
-
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
-
+  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
-
   static const int _countdownNotificationId = 1001;
+  static const int _maxAlarmRepeats = 3;
 
   Future<void> initialize() async {
     if (_initialized) return;
-
     tz_data.initializeTimeZones();
-
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
-
-    const settings = InitializationSettings(
-      android: androidSettings,
-    );
-
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const settings = InitializationSettings(android: androidSettings);
     await _plugin.initialize(settings);
-
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await android?.requestNotificationsPermission();
-
     _initialized = true;
   }
 
-  Future<void> showCountdownFinished(String title) async {
-    await initialize();
-
-    const androidDetails = AndroidNotificationDetails(
+  NotificationDetails get _details {
+    const android = AndroidNotificationDetails(
       'countdown_timer_channel',
       'هشدار تایمر',
       channelDescription: 'اعلان پایان شمارش معکوس',
@@ -49,56 +31,61 @@ class NotificationService {
       playSound: true,
       enableVibration: true,
     );
+    return const NotificationDetails(android: android);
+  }
 
-    const details = NotificationDetails(
-      android: androidDetails,
-    );
-
-    await _plugin.show(
-      _countdownNotificationId,
-      'پایان تایمر',
-      'زمان فعالیت «$title» به پایان رسید.',
-      details,
-    );
+  Future<void> showCountdownFinished(String title, {int repeatCount = 1}) async {
+    await initialize();
+    final count = repeatCount.clamp(1, _maxAlarmRepeats);
+    for (var i = 0; i < count; i++) {
+      final id = _countdownNotificationId + i;
+      if (i == 0) {
+        await _plugin.show(
+          id,
+          'پایان تایمر',
+          'زمان فعالیت «$title» به پایان رسید.',
+          _details,
+        );
+      } else {
+        await _plugin.zonedSchedule(
+          id,
+          'پایان تایمر',
+          'زمان فعالیت «$title» به پایان رسید.',
+          tz.TZDateTime.from(DateTime.now().add(Duration(seconds: i * 10)), tz.local),
+          _details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+      }
+    }
   }
 
   Future<void> scheduleCountdownFinished({
     required String title,
     required DateTime endTime,
+    int repeatCount = 1,
   }) async {
     await initialize();
-
     if (!endTime.isAfter(DateTime.now())) {
-      await showCountdownFinished(title);
+      await showCountdownFinished(title, repeatCount: repeatCount);
       return;
     }
-
-    const androidDetails = AndroidNotificationDetails(
-      'countdown_timer_channel',
-      'هشدار تایمر',
-      channelDescription: 'اعلان پایان شمارش معکوس',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-      enableVibration: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-    );
-
-    await _plugin.zonedSchedule(
-      _countdownNotificationId,
-      'پایان تایمر',
-      'زمان فعالیت «$title» به پایان رسید.',
-      tz.TZDateTime.from(endTime, tz.local),
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-    );
+    final count = repeatCount.clamp(1, _maxAlarmRepeats);
+    for (var i = 0; i < count; i++) {
+      await _plugin.zonedSchedule(
+        _countdownNotificationId + i,
+        'پایان تایمر',
+        'زمان فعالیت «$title» به پایان رسید.',
+        tz.TZDateTime.from(endTime.add(Duration(seconds: i * 10)), tz.local),
+        _details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
   }
 
   Future<void> cancelCountdownFinished() async {
     await initialize();
-    await _plugin.cancel(_countdownNotificationId);
+    for (var i = 0; i < _maxAlarmRepeats; i++) {
+      await _plugin.cancel(_countdownNotificationId + i);
+    }
   }
 }

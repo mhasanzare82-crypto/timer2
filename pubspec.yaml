@@ -1,7 +1,6 @@
 name: timer
-description: A new Flutter project.
+description: Persian activity time tracker
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -10,12 +9,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  flutter_localizations:
+    sdk: flutter
   sqflite: ^2.4.2
   path: ^1.9.1
   shared_preferences: ^2.5.3
   flutter_local_notifications: ^19.5.0
   timezone: ^0.10.1
+  shamsi_date: ^1.0.3
+  persian_datetime_picker: ^3.1.0
+  excel: ^4.0.6
+  archive: ^3.6.1
+  file_picker: ^8.1.7
+  path_provider: ^2.1.5
+  share_plus: ^10.1.4
 
 dev_dependencies:
   flutter_test:
