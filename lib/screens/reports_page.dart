@@ -170,8 +170,9 @@ class _ReportsPageState extends State<ReportsPage> {
         (picked.files.single.path == null ? null : await File(picked.files.single.path!).readAsBytes());
       if (bytes == null) throw Exception('No file bytes');
       final archive = ZipDecoder().decodeBytes(bytes);
-      final backup = archive.files.where((f) => f.name == 'timer2-backup.json').firstOrNull;
-      if (backup == null) throw Exception('Invalid backup');
+      final matches = archive.files.where((f) => f.name == 'timer2-backup.json').toList();
+      if (matches.isEmpty) throw Exception('Invalid backup');
+      final backup = matches.first;
       final decoded = jsonDecode(utf8.decode(backup.content as List<int>)) as Map<String, dynamic>;
       if (decoded['format'] != 'timer2-backup-v1') throw Exception('Unsupported backup');
       final raw = decoded['records'] as List<dynamic>;
