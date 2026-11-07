@@ -1,8 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../utils/time_formatter.dart';
@@ -12,790 +9,251 @@ import 'reports_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  static const String _homeStateKey = 'home_activity_state';
-
+  int _tab = 0;
   List<TimeRecord> _records = [];
-
-  int _totalSeconds = 0;
-
-  bool _loading = true;
-  bool _saving = false;
-  bool _stateLoaded = false;
-
-  DateTime? _startTime;
-  DateTime? _endTime;
-
-  DateTime _currentTime = DateTime.now();
-
-  final TextEditingController _subjectController = TextEditingController();
-
-  Timer? _clockTimer;
+  Timer? _ticker;
+  DateTime _now = DateTime.now();
+  DateTime? _startedAt;
+  Duration _elapsed = Duration.zero;
+  Duration _pausedElapsed = Duration.zero;
+  bool _running = false;
+  bool _paused = false;
+  bool _continuous = true;
+  bool _busy = false;
 
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addObserver(this);
-
-    _initializePage();
-
-    _clockTimer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) {
-        if (!mounted) return;
-
-        setState(() {
-          _currentTime = DateTime.now();
-        });
-      },
-    );
-  }
-
-  Future<void> _initializePage() async {
-    await _restoreHomeState();
-    await _loadRecords();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    _load();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-
       setState(() {
-        _currentTime = DateTime.now();
+        _now = DateTime.now();
+        if (_running && !_paused && _startedAt != null) {
+          _elapsed = _pausedElapsed + _now.difference(_startedAt!);
+        }
       });
-
-      _loadRecords();
-    } else if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.paused) {
-      _persistHomeState();
-    }
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-
-    _clockTimer?.cancel();
-    _subjectController.dispose();
-
+    _ticker?.cancel();
     super.dispose();
   }
 
-  Future<void> _restoreHomeState() async {
-    try {
-      final saved = await AppDatabase.instance.getAppState(
-        _homeStateKey,
-      );
-
-      if (saved != null) {
-        final data = jsonDecode(saved) as Map<String, dynamic>;
-
-        final startMilliseconds = (data['startTime'] as num?)?.toInt();
-
-        final endMilliseconds = (data['endTime'] as num?)?.toInt();
-
-        _startTime = startMilliseconds == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(
-                startMilliseconds,
-              );
-
-        _endTime = endMilliseconds == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(
-                endMilliseconds,
-              );
-
-        _subjectController.text = data['subject'] as String? ?? '';
-      }
-
-      _stateLoaded = true;
-
-      if (mounted) {
-        setState(() {
-          _currentTime = DateTime.now();
-        });
-      }
-    } catch (_) {
-      _stateLoaded = true;
-
-      if (mounted) {
-        _showMessage(
-          'بازیابی زمان‌های ذخیره‌شده ناموفق بود.',
-        );
-      }
-    }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load();
   }
 
-  Future<void> _persistHomeState() async {
-    if (!_stateLoaded) return;
-
-    final data = <String, dynamic>{
-      'startTime': _startTime?.millisecondsSinceEpoch,
-      'endTime': _endTime?.millisecondsSinceEpoch,
-      'subject': _subjectController.text,
-    };
-
-    try {
-      await AppDatabase.instance.saveAppState(
-        _homeStateKey,
-        jsonEncode(data),
-      );
-    } catch (_) {
-      // در صورت بروز خطا، اطلاعات فعلی صفحه تغییر نمی‌کنند.
-    }
+  Future<void> _load() async {
+    final rows = await AppDatabase.instance.getAllRecords();
+    if (mounted) setState(() => _records = rows);
   }
 
-  Future<void> _clearHomeState() async {
-    try {
-      await AppDatabase.instance.deleteAppState(
-        _homeStateKey,
-      );
-    } catch (_) {
-      _showMessage(
-        'پاک‌کردن اطلاعات موقت فعالیت ناموفق بود.',
-      );
-    }
+  String _duration(Duration d) => TimeFormatter.clock(d.inSeconds);
+  void _message(String value) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
   }
 
-  Future<void> _loadRecords() async {
-    try {
-      final records = await AppDatabase.instance.getAllRecords();
-
-      final total = await AppDatabase.instance.getTotalSeconds();
-
-      if (!mounted) return;
-
-      setState(() {
-        _records = records;
-        _totalSeconds = total;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        _loading = false;
-      });
-
-      _showMessage(
-        'بارگذاری سوابق فعالیت‌ها ناموفق بود.',
-      );
-    }
-  }
-
-  void _showMessage(String message) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  String _formatClock(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    final second = time.second.toString().padLeft(2, '0');
-
-    return '$hour:$minute:$second';
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.day.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _startActivity() async {
-    if (_saving) return;
-
-    final start = DateTime.now();
-
+  void _start() {
+    if (_running) return;
     setState(() {
-      _startTime = start;
-      _endTime = null;
+      _startedAt = DateTime.now();
+      _running = true;
+      _paused = false;
     });
-
-    await _persistHomeState();
-
-    _showMessage(
-      'زمان شروع ثبت شد: ${_formatClock(start)}',
-    );
   }
 
-  Future<void> _endActivity() async {
-    if (_saving) return;
+  void _pause() {
+    if (!_running || _paused) return;
+    setState(() {
+      _pausedElapsed = _elapsed;
+      _startedAt = null;
+      _paused = true;
+    });
+  }
 
-    if (_startTime == null) {
-      _showMessage('ابتدا دکمه شروع را بزنید.');
-      return;
-    }
+  void _resume() {
+    if (!_running || !_paused) return;
+    setState(() {
+      _startedAt = DateTime.now();
+      _paused = false;
+    });
+  }
 
+  Future<void> _stopAndSave() async {
+    if (!_running || _busy) return;
     final end = DateTime.now();
-
-    if (end.isBefore(_startTime!)) {
-      _showMessage('زمان پایان معتبر نیست.');
+    final seconds = _elapsed.inSeconds;
+    if (seconds <= 0) {
+      _message('مدت فعالیت باید بیشتر از صفر باشد.');
       return;
     }
-
-    setState(() {
-      _endTime = end;
-    });
-
-    await _persistHomeState();
-
-    final seconds = end.difference(_startTime!).inSeconds;
-
-    _showMessage(
-      'زمان پایان ثبت شد. مدت فعالیت: '
-      '${TimeFormatter.format(seconds)}',
-    );
-  }
-
-  Future<DateTime?> _chooseDateTime(
-    DateTime initialDateTime,
-  ) async {
-    final now = DateTime.now();
-
-    final selectedDate = await showDatePicker(
+    final titleController = TextEditingController();
+    final title = await showDialog<String>(
       context: context,
-      initialDate: initialDateTime,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      helpText: 'انتخاب تاریخ',
-      cancelText: 'انصراف',
-      confirmText: 'ادامه',
-    );
-
-    if (selectedDate == null || !mounted) {
-      return null;
-    }
-
-    final selectedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(
-        initialDateTime,
-      ),
-      helpText: 'انتخاب ساعت',
-      cancelText: 'انصراف',
-      confirmText: 'تأیید',
-    );
-
-    if (selectedTime == null || !mounted) {
-      return null;
-    }
-
-    return DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      selectedTime.hour,
-      selectedTime.minute,
-      now.second,
-    );
-  }
-
-  Future<void> _chooseManualTimes() async {
-    if (_saving) return;
-
-    final now = DateTime.now();
-
-    final selectedStart = await _chooseDateTime(
-      _startTime ?? now,
-    );
-
-    if (selectedStart == null || !mounted) return;
-
-    final selectedEnd = await _chooseDateTime(
-      _endTime ?? (selectedStart.isBefore(now) ? now : selectedStart),
-    );
-
-    if (selectedEnd == null || !mounted) return;
-
-    if (selectedEnd.isBefore(selectedStart)) {
-      _showMessage(
-        'زمان پایان نمی‌تواند قبل از زمان شروع باشد.',
-      );
-      return;
-    }
-
-    setState(() {
-      _startTime = selectedStart;
-      _endTime = selectedEnd;
-    });
-
-    await _persistHomeState();
-
-    _showMessage('زمان شروع و پایان انتخاب شدند.');
-  }
-
-  Future<void> _saveActivity() async {
-    if (_saving) return;
-
-    final title = _subjectController.text.trim();
-
-    if (title.isEmpty) {
-      _showMessage('لطفاً موضوع فعالیت را وارد کنید.');
-      return;
-    }
-
-    if (_startTime == null) {
-      _showMessage(
-        'ابتدا زمان شروع و پایان را ثبت یا انتخاب کنید.',
-      );
-      return;
-    }
-
-    if (_endTime == null) {
-      _showMessage('لطفاً زمان پایان را ثبت کنید.');
-      return;
-    }
-
-    if (_endTime!.isBefore(_startTime!)) {
-      _showMessage(
-        'زمان پایان نمی‌تواند قبل از زمان شروع باشد.',
-      );
-      return;
-    }
-
-    final durationSeconds = _endTime!.difference(_startTime!).inSeconds;
-
-    if (durationSeconds <= 0) {
-      _showMessage(
-        'مدت فعالیت باید بیشتر از صفر ثانیه باشد.',
-      );
-      return;
-    }
-
-    setState(() {
-      _saving = true;
-    });
-
-    try {
-      final record = TimeRecord(
-        title: title,
-        category: 'عمومی',
-        durationSeconds: durationSeconds,
-        createdAt: DateTime.now(),
-        activityDate: _startTime!,
-        note: 'شروع: ${_formatDate(_startTime!)} '
-            '${_formatClock(_startTime!)}\n'
-            'پایان: ${_formatDate(_endTime!)} '
-            '${_formatClock(_endTime!)}',
-      );
-
-      await AppDatabase.instance.insertRecord(record);
-
-      if (!mounted) return;
-
-      _subjectController.clear();
-
-      setState(() {
-        _startTime = null;
-        _endTime = null;
-      });
-
-      await _clearHomeState();
-      await _loadRecords();
-
-      if (!mounted) return;
-
-      _showMessage('فعالیت با موفقیت ثبت شد.');
-    } catch (_) {
-      _showMessage('ثبت فعالیت ناموفق بود.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _saving = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _openForm([TimeRecord? record]) async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RecordFormPage(record: record),
-      ),
-    );
-
-    if (result == true) {
-      await _loadRecords();
-    }
-  }
-
-  Future<void> _openTimer() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CountdownTimerPage(),
-      ),
-    );
-
-    await _loadRecords();
-  }
-
-  Future<void> _openReports() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ReportsPage(),
-      ),
-    );
-
-    await _loadRecords();
-  }
-
-  Future<void> _deleteRecord(TimeRecord record) async {
-    if (record.id == null) return;
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('حذف فعالیت'),
-        content: Text(
-          'آیا فعالیت «${record.title}» حذف شود؟',
+      builder: (ctx) => AlertDialog(
+        title: const Text('ثبت فعالیت'),
+        content: TextField(
+          controller: titleController,
+          autofocus: true,
+          textDirection: TextDirection.rtl,
+          decoration: const InputDecoration(labelText: 'نام فعالیت', hintText: 'مثلاً مطالعه'),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext, false);
-            },
-            child: const Text('انصراف'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext, true);
-            },
-            child: const Text('حذف'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, titleController.text.trim()), child: const Text('ذخیره')),
         ],
       ),
     );
-
-    if (confirm != true) return;
-
+    titleController.dispose();
+    if (title == null || title.isEmpty) return;
+    setState(() => _busy = true);
     try {
-      await AppDatabase.instance.deleteRecord(record.id!);
-      await _loadRecords();
-
-      if (mounted) {
-        _showMessage('فعالیت حذف شد.');
-      }
+      final start = end.subtract(Duration(seconds: seconds));
+      await AppDatabase.instance.insertRecord(TimeRecord(
+        title: title,
+        category: 'عمومی',
+        durationSeconds: seconds,
+        createdAt: DateTime.now(),
+        activityDate: start,
+        note: 'شروع: ${TimeFormatter.jalaliDateTime(start)}\nپایان: ${TimeFormatter.jalaliDateTime(end)}',
+      ));
+      if (!mounted) return;
+      setState(() {
+        _elapsed = Duration.zero;
+        _pausedElapsed = Duration.zero;
+        _startedAt = null;
+        _running = _continuous;
+        _paused = false;
+        if (_continuous) _startedAt = DateTime.now();
+      });
+      await _load();
+      _message('فعالیت «$title» ذخیره شد.');
     } catch (_) {
-      _showMessage('حذف فعالیت ناموفق بود.');
+      _message('ذخیره فعالیت انجام نشد.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
-  Widget _buildTimeRow({
-    required String label,
-    required DateTime? time,
-    required IconData icon,
-  }) {
-    final value = time == null
-        ? 'ثبت نشده'
-        : '${_formatDate(time)}  ${_formatClock(time)}';
-
-    return Row(
+  Widget _timerTab() {
+    return ListView(
+      padding: const EdgeInsets.all(18),
       children: [
-        Icon(icon, size: 20),
-        const SizedBox(width: 8),
-        Text(label),
-        const Spacer(),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            style: TextStyle(
-              color: time == null
-                  ? Theme.of(context).colorScheme.onSurfaceVariant
-                  : Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+        Row(children: [
+          const Expanded(child: Text('ثبت زمان', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold))),
+          const Text('فعالیت‌های پیوسته'),
+          Switch(value: _continuous, onChanged: (v) => setState(() => _continuous = v)),
+        ]),
+        const SizedBox(height: 12),
+        Card(child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+          child: Column(children: [
+            Text(TimeFormatter.persianDigits('${_now.hour.toString().padLeft(2, '0')}:${_now.minute.toString().padLeft(2, '0')}:${_now.second.toString().padLeft(2, '0')}'),
+              style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(TimeFormatter.jalaliDate(_now), style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 22),
+            const Text('مدت فعالیت جاری'),
+            const SizedBox(height: 8),
+            Text(_duration(_elapsed), textDirection: TextDirection.ltr,
+              style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.indigo)),
+            const SizedBox(height: 22),
+            Row(children: [
+              Expanded(child: FilledButton.icon(onPressed: _running ? null : _start, icon: const Icon(Icons.play_arrow), label: const Text('شروع'))),
+              const SizedBox(width: 8),
+              Expanded(child: OutlinedButton.icon(onPressed: _running ? (_paused ? _resume : _pause) : null,
+                icon: Icon(_paused ? Icons.play_arrow : Icons.pause), label: Text(_paused ? 'ادامه' : 'مکث'))),
+              const SizedBox(width: 8),
+              Expanded(child: FilledButton.tonalIcon(onPressed: _running && !_busy ? _stopAndSave : null,
+                icon: const Icon(Icons.stop), label: const Text('توقف'))),
+            ]),
+            if (_paused) const Padding(padding: EdgeInsets.only(top: 12), child: Text('تایمر در حالت مکث است')),
+          ]),
+        )),
+        const SizedBox(height: 12),
+        Card(child: SwitchListTile(
+          title: const Text('فعالیت‌های پیوسته'),
+          subtitle: Text(_continuous ? 'پس از ذخیره، تایمر فعالیت بعدی خودکار شروع می‌شود.' : 'پس از ذخیره، تایمر متوقف می‌ماند.'),
+          value: _continuous, onChanged: (v) => setState(() => _continuous = v),
+        )),
+        const SizedBox(height: 8),
+        Text('آخرین فعالیت‌ها', style: Theme.of(context).textTheme.titleMedium),
+        ..._records.take(4).map((r) => ListTile(
+          leading: const CircleAvatar(child: Icon(Icons.task_alt)),
+          title: Text(r.title),
+          subtitle: Text('${TimeFormatter.jalaliDate(r.activityDate)} • ${TimeFormatter.format(r.durationSeconds)}'),
+        )),
       ],
     );
   }
 
-  Widget _buildActivityRecord(TimeRecord record) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(
-          record.title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
+  Widget _activitiesTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(children: [
+          const Expanded(child: Text('فعالیت‌ها', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold))),
+          FilledButton.icon(onPressed: () async {
+            await Navigator.push(context, MaterialPageRoute(builder: (_) => const RecordFormPage()));
+            _load();
+          }, icon: const Icon(Icons.add), label: const Text('ثبت دستی')),
+        ]),
+        const SizedBox(height: 12),
+        if (_records.isEmpty) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('هنوز فعالیتی ثبت نشده است.'))),
+        ..._records.map((r) => Card(child: ListTile(
+          leading: const CircleAvatar(child: Icon(Icons.timelapse)),
+          title: Text(r.title),
+          subtitle: Text('${TimeFormatter.jalaliDate(r.activityDate)} • ${TimeFormatter.format(r.durationSeconds)}\n${r.note ?? r.category}'),
+          isThreeLine: true,
+          trailing: PopupMenuButton<String>(
+            onSelected: (v) async {
+              if (v == 'edit') {
+                await Navigator.push(context, MaterialPageRoute(builder: (_) => RecordFormPage(record: r)));
+              } else if (r.id != null) {
+                await AppDatabase.instance.deleteRecord(r.id!);
+              }
+              _load();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'edit', child: Text('ویرایش')),
+              PopupMenuItem(value: 'delete', child: Text('حذف')),
+            ],
           ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            '${record.category}\n'
-            'مدت: ${TimeFormatter.format(record.durationSeconds)}\n'
-            'تاریخ: ${_formatDate(record.activityDate)}',
-          ),
-        ),
-        isThreeLine: true,
-        onTap: () => _openForm(record),
-        trailing: IconButton(
-          onPressed: () => _deleteRecord(record),
-          icon: const Icon(Icons.delete_outline),
-          tooltip: 'حذف فعالیت',
-        ),
-      ),
+        ))),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('ثبت زمان'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: _openReports,
-            icon: const Icon(Icons.bar_chart),
-            tooltip: 'گزارش‌ها',
-          ),
-          IconButton(
-            onPressed: _openTimer,
-            icon: const Icon(Icons.hourglass_bottom),
-            tooltip: 'تایمر معکوس',
-          ),
-        ],
+    final pages = [_timerTab(), _activitiesTab(), const ReportsPage(), const CountdownTimerPage()];
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: SafeArea(child: IndexedStack(index: _tab, children: pages)),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _tab,
+          onDestinationSelected: (v) => setState(() => _tab = v),
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.timer_outlined), selectedIcon: Icon(Icons.timer), label: 'ثبت زمان'),
+            NavigationDestination(icon: Icon(Icons.list_alt), label: 'فعالیت‌ها'),
+            NavigationDestination(icon: Icon(Icons.bar_chart), label: 'گزارش‌گیری'),
+            NavigationDestination(icon: Icon(Icons.hourglass_bottom), label: 'تایمر معکوس'),
+          ],
+        ),
       ),
-      body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadRecords,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 28,
-                      horizontal: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          _formatClock(_currentTime),
-                          textDirection: TextDirection.ltr,
-                          style: theme.textTheme.displayMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                            fontFeatures: const [],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _formatDate(_currentTime),
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'ساعت دیجیتال',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 52,
-                          child: ElevatedButton.icon(
-                            onPressed: _saving ? null : _startActivity,
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('شروع'),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox(
-                          height: 52,
-                          child: ElevatedButton.icon(
-                            onPressed: _saving ? null : _endActivity,
-                            icon: const Icon(Icons.stop),
-                            label: const Text('پایان'),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: colorScheme.outlineVariant,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildTimeRow(
-                          label: 'زمان شروع:',
-                          time: _startTime,
-                          icon: Icons.play_circle_outline,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildTimeRow(
-                          label: 'زمان پایان:',
-                          time: _endTime,
-                          icon: Icons.stop_circle_outlined,
-                        ),
-                        if (_startTime != null && _endTime != null) ...[
-                          const Divider(height: 24),
-                          Row(
-                            children: [
-                              const Icon(Icons.timer_outlined),
-                              const SizedBox(width: 8),
-                              const Text('مدت فعالیت:'),
-                              const Spacer(),
-                              Text(
-                                TimeFormatter.format(
-                                  _endTime!.difference(_startTime!).inSeconds,
-                                ),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _saving ? null : _chooseManualTimes,
-                      icon: const Icon(Icons.edit_calendar),
-                      label: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          'انتخاب دستی زمان شروع و پایان',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'موضوع فعالیت',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _subjectController,
-                    textInputAction: TextInputAction.done,
-                    onChanged: (_) {
-                      _persistHomeState();
-                    },
-                    decoration: const InputDecoration(
-                      hintText: 'موضوع فعالیت را وارد کنید',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.edit_note),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      onPressed: _saving ? null : _saveActivity,
-                      icon: _saving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.save_outlined),
-                      label: Text(
-                        _saving ? 'در حال ثبت...' : 'ثبت فعالیت',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('مجموع تمام فعالیت‌ها'),
-                          const SizedBox(height: 8),
-                          Text(
-                            TimeFormatter.format(_totalSeconds),
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'سوابق فعالیت‌ها',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (_records.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'هنوز فعالیتی ثبت نشده است.',
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  else
-                    ..._records.map(_buildActivityRecord),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
     );
   }
 }
