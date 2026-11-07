@@ -139,10 +139,13 @@ class _ReportsPageState extends State<ReportsPage> {
     setState(() => _working = true);
     try {
       final all = await AppDatabase.instance.getAllRecords();
+      final db = await AppDatabase.instance.database;
+      final appState = await db.query('app_state');
       final payload = jsonEncode({
         'format': 'timer2-backup-v1',
         'createdAt': DateTime.now().toIso8601String(),
         'records': all.map((r) => r.toMap()).toList(),
+        'appState': appState,
       });
       final bytes = utf8.encode(payload);
       final archive = Archive()
@@ -177,12 +180,17 @@ class _ReportsPageState extends State<ReportsPage> {
       if (decoded['format'] != 'timer2-backup-v1') throw Exception('Unsupported backup');
       final raw = decoded['records'] as List<dynamic>;
       final records = raw.map((e) => TimeRecord.fromMap(Map<String, Object?>.from(e as Map))).toList();
+      final savedState = (decoded['appState'] as List<dynamic>? ?? []);
       final db = await AppDatabase.instance.database;
       await db.transaction((txn) async {
         await txn.delete('time_records');
         for (final record in records) {
           final map = record.toMap()..remove('id');
           await txn.insert('time_records', map);
+        }
+        await txn.delete('app_state');
+        for (final entry in savedState) {
+          await txn.insert('app_state', Map<String, Object?>.from(entry as Map));
         }
       });
       await _load();
