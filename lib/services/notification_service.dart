@@ -38,12 +38,24 @@ class NotificationService {
     await initialize();
     final count = repeatCount.clamp(1, _maxAlarmRepeats);
     for (var i = 0; i < count; i++) {
-      await _plugin.show(
-        _countdownNotificationId + i,
-        'پایان تایمر',
-        'زمان فعالیت «$title» به پایان رسید.',
-        _details,
-      );
+      final id = _countdownNotificationId + i;
+      if (i == 0) {
+        await _plugin.show(
+          id,
+          'پایان تایمر',
+          'زمان فعالیت «$title» به پایان رسید.',
+          _details,
+        );
+      } else {
+        await _plugin.zonedSchedule(
+          id,
+          'پایان تایمر',
+          'زمان فعالیت «$title» به پایان رسید.',
+          tz.TZDateTime.from(DateTime.now().add(Duration(seconds: i * 10)), tz.local),
+          _details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+      }
     }
   }
 
