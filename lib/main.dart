@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'screens/home_page.dart';
+import 'screens/main_tabs_page.dart';
 import 'services/notification_service.dart';
 
 Future<void> main() async {
@@ -30,7 +31,14 @@ class TimeTrackerApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFFF7F8FC),
       ),
-      home: const HomePage(),
+      locale: const Locale('fa', 'IR'),
+      supportedLocales: const [Locale('fa', 'IR'), Locale('en', 'US')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: const MainTabsPage(),
     );
   }
 }
