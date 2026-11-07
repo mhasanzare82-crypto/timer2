@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../utils/time_formatter.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import 'record_form_page.dart';
 
 class ActivitiesPage extends StatefulWidget {
@@ -28,7 +29,10 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
     setState(() { _records = records; _loading = false; });
   }
 
-  String _date(DateTime value) => '${value.year}/${value.month.toString().padLeft(2, '0')}/${value.day.toString().padLeft(2, '0')}';
+  String _date(DateTime value) {
+    final j = Jalali.fromDateTime(value);
+    return '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}';
+  }
 
   Future<void> _edit(TimeRecord record) async {
     final saved = await Navigator.push<bool>(context,
