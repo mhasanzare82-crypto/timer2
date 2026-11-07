@@ -25,13 +25,7 @@ class TimeTrackerApp extends StatelessWidget {
     return MaterialApp(
       title: 'ثبت مدت‌زمان',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF7F8FC),
-      ),
+      theme: AppTheme.light,
       locale: const Locale('fa', 'IR'),
       supportedLocales: const [Locale('fa', 'IR'), Locale('en', 'US')],
       localizationsDelegates: const [
