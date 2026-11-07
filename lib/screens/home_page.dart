@@ -33,6 +33,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _load();
+    _restoreTimerState();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
@@ -53,7 +54,53 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _load();
+    if (state == AppLifecycleState.resumed) {
+      _load();
+      _restoreTimerState();
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
+      _persistTimerState();
+    }
+  }
+
+  Future<void> _restoreTimerState() async {
+    try {
+      final saved = await AppDatabase.instance.getAppState('active_timer_state');
+      if (saved == null) return;
+      final data = jsonDecode(saved) as Map<String, dynamic>;
+      final started = (data['startedAt'] as num?)?.toInt();
+      final pausedMs = (data['pausedElapsedMs'] as num?)?.toInt() ?? 0;
+      final wasRunning = data['running'] as bool? ?? false;
+      final wasPaused = data['paused'] as bool? ?? false;
+      if (!mounted) return;
+      setState(() {
+        _continuous = data['continuous'] as bool? ?? true;
+        _running = wasRunning;
+        _paused = wasPaused;
+        _pausedElapsed = Duration(milliseconds: pausedMs);
+        _startedAt = wasRunning && !wasPaused && started != null
+            ? DateTime.fromMillisecondsSinceEpoch(started)
+            : null;
+        _elapsed = _pausedElapsed +
+            (_startedAt == null ? Duration.zero : DateTime.now().difference(_startedAt!));
+      });
+    } catch (_) {
+      _message('بازیابی تایمر فعالیت ناموفق بود.');
+    }
+  }
+
+  Future<void> _persistTimerState() async {
+    final data = {
+      'startedAt': _startedAt?.millisecondsSinceEpoch,
+      'pausedElapsedMs': _pausedElapsed.inMilliseconds,
+      'running': _running,
+      'paused': _paused,
+      'continuous': _continuous,
+    };
+    try {
+      await AppDatabase.instance.saveAppState('active_timer_state', jsonEncode(data));
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -78,6 +125,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _running = true;
       _paused = false;
     });
+    _persistTimerState();
   }
 
   void _pause() {
@@ -87,6 +135,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _startedAt = null;
       _paused = true;
     });
+    _persistTimerState();
   }
 
   void _resume() {
@@ -95,6 +144,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _startedAt = DateTime.now();
       _paused = false;
     });
+    _persistTimerState();
   }
 
   Future<void> _stopAndSave() async {
@@ -155,6 +205,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _paused = false;
         if (_continuous) _startedAt = DateTime.now();
       });
+      await _persistTimerState();
       await _load();
       _message('فعالیت «$title» ذخیره شد.');
     } catch (_) {
@@ -171,7 +222,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         Row(children: [
           const Expanded(child: Text('ثبت زمان', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold))),
           const Text('فعالیت‌های پیوسته'),
-          Switch(value: _continuous, onChanged: (v) => setState(() => _continuous = v)),
+          Switch(value: _continuous, onChanged: (v) { setState(() => _continuous = v); _persistTimerState(); }),
         ]),
         const SizedBox(height: 12),
         Card(child: Padding(
@@ -203,7 +254,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         Card(child: SwitchListTile(
           title: const Text('فعالیت‌های پیوسته'),
           subtitle: Text(_continuous ? 'پس از ذخیره، تایمر فعالیت بعدی خودکار شروع می‌شود.' : 'پس از ذخیره، تایمر متوقف می‌ماند.'),
-          value: _continuous, onChanged: (v) => setState(() => _continuous = v),
+          value: _continuous, onChanged: (v) { setState(() => _continuous = v); _persistTimerState(); },
         )),
         const SizedBox(height: 8),
         Text('آخرین فعالیت‌ها', style: Theme.of(context).textTheme.titleMedium),
