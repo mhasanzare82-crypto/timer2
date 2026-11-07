@@ -234,6 +234,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       await NotificationService.instance.scheduleCountdownFinished(
         title: title,
         endTime: _endTime!,
+        repeatCount: _alarmRepeatCount,
       );
 
       _startTicker();
