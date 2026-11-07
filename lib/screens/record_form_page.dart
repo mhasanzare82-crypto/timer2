@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 
 import '../database/app_database.dart';
 import '../models/time_record.dart';
@@ -83,6 +84,11 @@ class _RecordFormPageState extends State<RecordFormPage> {
   int _number(TextEditingController controller) {
     final number = int.tryParse(controller.text.trim()) ?? 0;
     return number < 0 ? 0 : number;
+  }
+
+  String _jalaliDate(DateTime date) {
+    final j = Jalali.fromDateTime(date);
+    return '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}';
   }
 
   Future<void> _chooseDate() async {
