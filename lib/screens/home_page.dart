@@ -120,6 +120,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       _stateLoaded = true;
+      await _syncActivityWidget();
 
       if (mounted) {
         setState(() {
@@ -151,16 +152,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _homeStateKey,
         jsonEncode(data),
       );
+      await _syncActivityWidget();
     } catch (_) {
       // در صورت بروز خطا، اطلاعات فعلی صفحه تغییر نمی‌کنند.
     }
   }
+
+  Future<void> _syncActivityWidget() => HomeWidgetService.updateActivity(
+        title: _subjectController.text.trim(),
+        startTimeMilliseconds: _startTime?.millisecondsSinceEpoch,
+      );
 
   Future<void> _clearHomeState() async {
     try {
       await AppDatabase.instance.deleteAppState(
         _homeStateKey,
       );
+      await HomeWidgetService.updateActivity(title: '', startTimeMilliseconds: null);
     } catch (_) {
       _showMessage(
         'پاک‌کردن اطلاعات موقت فعالیت ناموفق بود.',
