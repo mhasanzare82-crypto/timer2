@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'screens/main_tabs_page.dart';
+import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 
 Future<void> main() async {
