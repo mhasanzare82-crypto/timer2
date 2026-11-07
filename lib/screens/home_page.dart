@@ -21,6 +21,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Timer? _ticker;
   DateTime _now = DateTime.now();
   DateTime? _startedAt;
+  DateTime? _sessionStartedAt;
   Duration _elapsed = Duration.zero;
   Duration _pausedElapsed = Duration.zero;
   bool _running = false;
@@ -71,6 +72,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final data = jsonDecode(saved) as Map<String, dynamic>;
       final started = (data['startedAt'] as num?)?.toInt();
       final pausedMs = (data['pausedElapsedMs'] as num?)?.toInt() ?? 0;
+      final sessionMs = (data['sessionStartedAt'] as num?)?.toInt();
       final wasRunning = data['running'] as bool? ?? false;
       final wasPaused = data['paused'] as bool? ?? false;
       if (!mounted) return;
@@ -79,6 +81,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _running = wasRunning;
         _paused = wasPaused;
         _pausedElapsed = Duration(milliseconds: pausedMs);
+        _sessionStartedAt = sessionMs == null ? null : DateTime.fromMillisecondsSinceEpoch(sessionMs);
         _startedAt = wasRunning && !wasPaused && started != null
             ? DateTime.fromMillisecondsSinceEpoch(started)
             : null;
@@ -93,6 +96,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _persistTimerState() async {
     final data = {
       'startedAt': _startedAt?.millisecondsSinceEpoch,
+      'sessionStartedAt': _sessionStartedAt?.millisecondsSinceEpoch,
       'pausedElapsedMs': _pausedElapsed.inMilliseconds,
       'running': _running,
       'paused': _paused,
@@ -122,6 +126,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (_running) return;
     setState(() {
       _startedAt = DateTime.now();
+      _sessionStartedAt = DateTime.now();
       _running = true;
       _paused = false;
     });
@@ -187,7 +192,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (title == null || title.isEmpty) return;
     setState(() => _busy = true);
     try {
-      final start = end.subtract(Duration(seconds: seconds));
+      final start = _sessionStartedAt ?? end.subtract(Duration(seconds: seconds));
       await AppDatabase.instance.insertRecord(TimeRecord(
         title: title,
         category: 'عمومی',
@@ -201,6 +206,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _elapsed = Duration.zero;
         _pausedElapsed = Duration.zero;
         _startedAt = null;
+        _sessionStartedAt = null;
         _running = _continuous;
         _paused = false;
         if (_continuous) _startedAt = DateTime.now();
