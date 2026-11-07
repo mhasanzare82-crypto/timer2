@@ -87,19 +87,22 @@ class _RecordFormPageState extends State<RecordFormPage> {
   }
 
   Future<void> _chooseDate() async {
-    final selected = await showDatePicker(
+    final selected = await showPersianDatePicker(
       context: context,
-      initialDate: _activityDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: Jalali.fromDateTime(_activityDate),
+      firstDate: Jalali(1300, 1),
+      lastDate: Jalali(1500, 12),
+      locale: const Locale('fa', 'IR'),
+      textDirection: TextDirection.rtl,
     );
 
     if (selected != null && mounted) {
+      final date = selected.toDateTime();
       setState(() {
         _activityDate = DateTime(
-          selected.year,
-          selected.month,
-          selected.day,
+          date.year,
+          date.month,
+          date.day,
           _activityDate.hour,
           _activityDate.minute,
         );
