@@ -281,14 +281,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   ) async {
     final now = DateTime.now();
 
-    final selectedDate = await showDatePicker(
+    final selectedDate = await showJalaliDatePicker(
       context: context,
       initialDate: initialDateTime,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      helpText: 'انتخاب تاریخ',
-      cancelText: 'انصراف',
-      confirmText: 'ادامه',
     );
 
     if (selectedDate == null || !mounted) {
@@ -402,6 +397,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         durationSeconds: durationSeconds,
         createdAt: DateTime.now(),
         activityDate: _startTime!,
+        startedAt: _startTime!,
+        endedAt: _endTime!,
         note: 'شروع: ${_formatDate(_startTime!)} '
             '${_formatClock(_startTime!)}\n'
             'پایان: ${_formatDate(_endTime!)} '
