@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../database/app_database.dart';
 import '../models/time_record.dart';
+import '../utils/time_formatter.dart';
 
 class RecordFormPage extends StatefulWidget {
   final TimeRecord? record;
