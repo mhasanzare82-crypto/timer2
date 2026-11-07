@@ -12,6 +12,11 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 val preferences = getSharedPreferences("TimerWidgetPrefs", Context.MODE_PRIVATE)
                 when (call.method) {
+                    "consumePendingActivityAction" -> {
+                        val action = preferences.getString("pending_activity_widget_action", null)
+                        preferences.edit().remove("pending_activity_widget_action").apply()
+                        result.success(action)
+                    }
                     "updateCountdownWidget" -> {
                         val values = call.arguments as? Map<*, *>
                         if (values == null) {
