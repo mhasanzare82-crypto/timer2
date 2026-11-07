@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 
 import 'screens/home_page.dart';
 import 'services/notification_service.dart';
@@ -25,7 +26,13 @@ class TimeTrackerApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       locale: const Locale('fa', 'IR'),
       supportedLocales: const [Locale('fa', 'IR'), Locale('en', 'US')],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      localizationsDelegates: const [
+        PersianMaterialLocalizations.delegate,
+        PersianCupertinoLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: seed),
