@@ -21,13 +21,14 @@ class _ReportsPageState extends State<ReportsPage> {
  @override void initState(){super.initState();load();}
  Future<void> load() async {
   final r=await AppDatabase.instance.getAllRecords(); final n=r.map((e)=>e.title).toSet().toList()..sort();
-  if(!mounted)return; setState(()=>{all=r,names=n,loading=false}); apply();
+  if(!mounted)return; setState(() { all = r; names = n; loading = false; }); apply();
  }
  DateTimeRange get bounds {
   final now=Jalali.now(); if(period=='بازه دلخواه'&&range!=null)return range!;
-  if(period=='هفتگی'){final s=now.addDays(-(now.weekDay-1)).toDateTime();final e=now.addDays(-(now.weekDay-1)+7).toDateTime();return DateTimeRange(start:s,end:e);}
-  if(period=='ماهانه'){final s=now.withDay(1);return DateTimeRange(start:s.toDateTime(),end:s.addMonths(1).toDateTime());}
-  final s=now.withDay(1);final day=now.toDateTime();final start=Jalali.fromDateTime(day).toDateTime();return DateTimeRange(start:start,end:start.add(const Duration(days:1)));
+  final today = Jalali(now.year, now.month, now.day);
+  if(period=='هفتگی'){final start=today.addDays(-(today.weekDay-1));return DateTimeRange(start:start.toDateTime(),end:start.addDays(7).toDateTime());}
+  if(period=='ماهانه'){final start=today.withDay(1);return DateTimeRange(start:start.toDateTime(),end:start.addMonths(1).toDateTime());}
+  return DateTimeRange(start:today.toDateTime(),end:today.addDays(1).toDateTime());
  }
  void apply(){final b=bounds; final r=all.where((e)=>!e.activityDate.isBefore(b.start)&&e.activityDate.isBefore(b.end)&&(activity=='همه فعالیت‌ها'||e.title==activity)).toList();if(mounted)setState(()=>rows=r);}
  int get total=>rows.fold(0,(s,e)=>s+e.durationSeconds);
