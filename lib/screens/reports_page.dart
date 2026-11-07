@@ -24,20 +24,20 @@ class _ReportsPageState extends State<ReportsPage> {
   if(!mounted)return; setState(()=>{all=r,names=n,loading=false}); apply();
  }
  DateTimeRange get bounds {
-  final now=DateTime.now(); if(period=='بازه دلخواه'&&range!=null)return range!;
-  if(period=='هفتگی'){final s=DateTime(now.year,now.month,now.day).subtract(Duration(days:now.weekday-1));return DateTimeRange(start:s,end:s.add(const Duration(days:7)));}
-  if(period=='ماهانه')return DateTimeRange(start:DateTime(now.year,now.month),end:DateTime(now.year,now.month+1));
-  final s=DateTime(now.year,now.month,now.day);return DateTimeRange(start:s,end:s.add(const Duration(days:1)));
+  final now=Jalali.now(); if(period=='بازه دلخواه'&&range!=null)return range!;
+  if(period=='هفتگی'){final s=now.addDays(-(now.weekDay-1)).toDateTime();final e=now.addDays(-(now.weekDay-1)+7).toDateTime();return DateTimeRange(start:s,end:e);}
+  if(period=='ماهانه'){final s=now.withDay(1);return DateTimeRange(start:s.toDateTime(),end:s.addMonths(1).toDateTime());}
+  final s=now.withDay(1);final day=now.toDateTime();final start=Jalali.fromDateTime(day).toDateTime();return DateTimeRange(start:start,end:start.add(const Duration(days:1)));
  }
  void apply(){final b=bounds; final r=all.where((e)=>!e.activityDate.isBefore(b.start)&&e.activityDate.isBefore(b.end)&&(activity=='همه فعالیت‌ها'||e.title==activity)).toList();if(mounted)setState(()=>rows=r);}
  int get total=>rows.fold(0,(s,e)=>s+e.durationSeconds);
  Future<void> chooseRange() async {
-  final now = Jalali.now();
+  final now = Jalali.fromDateTime(DateTime.now());
   final current = range;
   final selected = await showPersianDateRangePicker(
     context: context,
     initialDateRange: JalaliRange(
-      start: current == null ? now.subtract(const Duration(days: 6)) : Jalali.fromDateTime(current.start),
+      start: current == null ? Jalali.fromDateTime(DateTime.now().subtract(const Duration(days: 6))) : Jalali.fromDateTime(current.start),
       end: current == null ? now : Jalali.fromDateTime(current.end.subtract(const Duration(days: 1))),
     ),
     firstDate: Jalali(1300, 1),
