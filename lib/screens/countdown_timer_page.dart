@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../services/notification_service.dart';
+import '../services/home_widget_service.dart';
 import '../utils/time_formatter.dart';
 
 class CountdownTimerPage extends StatefulWidget {
