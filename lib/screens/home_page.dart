@@ -38,7 +38,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _pausedSeconds = 0;
 
   int get _elapsedSeconds => _pausedSeconds +
-      (_resumeTime == null ? 0 : _currentTime.difference(_resumeTime!).inSeconds.clamp(0, 1 << 30));
+      (_resumeTime == null ? 0 : _currentTime.difference(_resumeTime!).inSeconds.clamp(0, 1 << 30).toInt());
 
   bool get _isTracking => _startTime != null && _endTime == null;
   bool get _isRunning => _isTracking && _resumeTime != null;
@@ -175,11 +175,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _syncActivityWidget() => HomeWidgetService.updateActivity(
-        title: _subjectController.text.trim(),
-        startTimeMilliseconds: _startTime?.millisecondsSinceEpoch,
-        endTimeMilliseconds: _endTime?.millisecondsSinceEpoch,
-      );
+  Future<void> _syncActivityWidget() {
+    final now = DateTime.now();
+    final active = _startTime != null && _endTime == null;
+    final start = _startTime == null
+        ? null
+        : now.subtract(Duration(seconds: _elapsedSeconds)).millisecondsSinceEpoch;
+    return HomeWidgetService.updateActivity(
+      title: _subjectController.text.trim(),
+      startTimeMilliseconds: start,
+      endTimeMilliseconds: active && _resumeTime != null
+          ? null
+          : (active || _endTime != null ? now.millisecondsSinceEpoch : null),
+    );
+  }
 
   Future<void> _clearHomeState() async {
     try {
