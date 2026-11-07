@@ -307,18 +307,6 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     await _persistState();
   }
 
-  Widget _preset(String label, int seconds) {
-    return ActionChip(label: Text(label), onPressed: (!_running && !_finished) ? () {
-      setState(() {
-        _hoursController.text = (seconds ~/ 3600).toString();
-        _minutesController.text = ((seconds % 3600) ~/ 60).toString();
-        _secondsController.text = (seconds % 60).toString();
-        _initialSeconds = seconds; _remainingSeconds = seconds;
-      });
-      _persistState();
-    } : null);
-  }
-
   Future<void> _reset() async {
     _timer?.cancel();
 
