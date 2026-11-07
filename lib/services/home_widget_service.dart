@@ -29,11 +29,13 @@ class HomeWidgetService {
   static Future<void> updateActivity({
     required String title,
     int? startTimeMilliseconds,
+    int? endTimeMilliseconds,
   }) async {
     try {
       await _channel.invokeMethod<void>('updateActivityWidget', {
         'title': title,
         'startTime': startTimeMilliseconds,
+        'endTime': endTimeMilliseconds,
       });
     } on PlatformException {
       // Do not interrupt time tracking if widget refresh fails.
