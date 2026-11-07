@@ -303,6 +303,18 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     await _persistState();
   }
 
+  Widget _preset(String label, int seconds) {
+    return ActionChip(label: Text(label), onPressed: (!_running && !_finished) ? () {
+      setState(() {
+        _hoursController.text = (seconds ~/ 3600).toString();
+        _minutesController.text = ((seconds % 3600) ~/ 60).toString();
+        _secondsController.text = (seconds % 60).toString();
+        _initialSeconds = seconds; _remainingSeconds = seconds;
+      });
+      _persistState();
+    } : null);
+  }
+
   Future<void> _reset() async {
     _timer?.cancel();
 
@@ -451,7 +463,15 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('مدت‌زمان تایمر'),
+          const Text('زمان‌های آماده'),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _preset('۵ دقیقه', 300), _preset('۱۰ دقیقه', 600),
+            _preset('۱۵ دقیقه', 900), _preset('۲۵ دقیقه', 1500),
+            _preset('۳۰ دقیقه', 1800), _preset('۱ ساعت', 3600),
+          ]),
+          const SizedBox(height: 18),
+          const Text('مدت‌زمان دلخواه'),
           const SizedBox(height: 8),
           Row(
             children: [
