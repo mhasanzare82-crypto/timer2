@@ -209,7 +209,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _sessionStartedAt = null;
         _running = _continuous;
         _paused = false;
-        if (_continuous) _startedAt = DateTime.now();
+        if (_continuous) {
+          _startedAt = DateTime.now();
+          _sessionStartedAt = _startedAt;
+        }
       });
       await _persistTimerState();
       await _load();
