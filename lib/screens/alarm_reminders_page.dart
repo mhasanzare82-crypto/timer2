@@ -86,8 +86,8 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
     } catch (_) { _showMessage('حذف یادآور ناموفق بود.'); }
   }
 
-  String _formatDate(DateTime d) => '\${d.year}/\${d.month.toString().padLeft(2, '0')}/\${d.day.toString().padLeft(2, '0')}';
-  String _formatTime(DateTime d) => '\${d.hour.toString().padLeft(2, '0')}:\${d.minute.toString().padLeft(2, '0')}';
+  String _formatDate(DateTime d) => '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
+  String _formatTime(DateTime d) => '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -123,7 +123,7 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
           return Card(child: ListTile(
             leading: Icon(daily ? Icons.repeat : Icons.notifications_outlined, color: Theme.of(context).colorScheme.primary),
             title: Text(r['title'] as String),
-            subtitle: Text('\${_formatDate(date)}  \${_formatTime(date)}\${daily ? ' • هر روز' : ''}'),
+            subtitle: Text('${_formatDate(date)}  ${_formatTime(date)}${daily ? ' • هر روز' : ''}'),
             trailing: IconButton(tooltip: 'حذف یادآور', onPressed: () => _deleteReminder(r), icon: const Icon(Icons.delete_outline)),
           ));
         }),
