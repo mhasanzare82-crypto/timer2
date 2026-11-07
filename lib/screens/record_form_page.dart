@@ -93,11 +93,9 @@ class _RecordFormPageState extends State<RecordFormPage> {
   }
 
   Future<void> _chooseDate() async {
-    final selected = await showDatePicker(
+    final selected = await showJalaliDatePicker(
       context: context,
       initialDate: _activityDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
     );
 
     if (selected != null && mounted) {
@@ -138,6 +136,8 @@ class _RecordFormPageState extends State<RecordFormPage> {
       durationSeconds: duration,
       createdAt: widget.record?.createdAt ?? now,
       activityDate: _activityDate,
+      startedAt: widget.record?.startedAt,
+      endedAt: widget.record?.endedAt,
       note: _noteController.text.trim().isEmpty
           ? null
           : _noteController.text.trim(),
