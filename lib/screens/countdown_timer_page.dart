@@ -193,11 +193,6 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
 
     final title = _titleController.text.trim();
 
-    if (title.isEmpty) {
-      _message('عنوان فعالیت را وارد کنید.');
-      return;
-    }
-
     if (_finished) {
       _message('برای شروع تایمر جدید، ابتدا بازنشانی کنید.');
       return;
@@ -281,6 +276,33 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     }
   }
 
+  Widget _preset(String label, int seconds) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: (!_running && !_finished) ? () {
+        setState(() {
+          _hoursController.text = (seconds ~/ 3600).toString();
+          _minutesController.text = ((seconds % 3600) ~/ 60).toString();
+          _secondsController.text = (seconds % 60).toString();
+          _initialSeconds = seconds;
+          _remainingSeconds = seconds;
+        });
+        _persistState();
+      } : null,
+    );
+  }
+
+  Future<void> _stop() async {
+    _timer?.cancel();
+    if (_endTime != null) {
+      final left = (_endTime!.difference(DateTime.now()).inMilliseconds / 1000).ceil();
+      _remainingSeconds = left > 0 ? left : 0;
+    }
+    setState(() { _running = false; _endTime = null; });
+    await NotificationService.instance.cancelCountdownFinished();
+    await _persistState();
+  }
+
   Future<void> _reset() async {
     _timer?.cancel();
 
@@ -334,10 +356,33 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   }) async {
     if (_completionRecorded) return;
 
-    final title = _titleController.text.trim();
-
-    if (title.isEmpty || _initialSeconds <= 0) return;
-
+    if (_initialSeconds <= 0) return;
+    final titleController = TextEditingController(text: _titleController.text.trim());
+    final title = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('زمان به پایان رسید'),
+        content: TextField(
+          controller: titleController,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'موضوع فعالیت'),
+          onSubmitted: (value) => Navigator.pop(ctx, value.trim()),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, titleController.text.trim()),
+            child: const Text('ثبت فعالیت'),
+          ),
+        ],
+      ),
+    );
+    titleController.dispose();
+    if (title == null || title.trim().isEmpty) {
+      _message('برای ذخیره فعالیت، موضوع را وارد کنید.');
+      return;
+    }
+    _titleController.text = title.trim();
     final now = DateTime.now();
 
     try {
