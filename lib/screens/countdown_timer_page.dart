@@ -302,7 +302,11 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         ),
         actions: [
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                Navigator.pop(dialogContext, controller.text.trim());
+              }
+            },
             child: const Text('ثبت فعالیت'),
           ),
         ],
