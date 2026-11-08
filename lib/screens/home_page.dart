@@ -173,15 +173,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _stateKey,
         jsonEncode(_timers.map((e) => e.toMap()).toList()),
       );
-      final activeTimers = _timers.where((e) => e.running).toList();
-      final active = activeTimers.isEmpty ? null : activeTimers.first;
+      final active = _timers.where((e) => e.running || e.elapsed > Duration.zero).firstOrNull;
       if (active != null) {
         await HomeWidgetService.updateActivity(
           title: active.controller.text.trim(),
-          startTimeMilliseconds: active.startedAt?.millisecondsSinceEpoch,
+          startTimeMilliseconds: active.running ? active.startedAt?.millisecondsSinceEpoch : null,
+          running: active.running,
+          elapsedSeconds: active.currentElapsed.inSeconds,
         );
       } else {
-        await HomeWidgetService.updateActivity(title: '', startTimeMilliseconds: null);
+        await HomeWidgetService.updateActivity(
+          title: '',
+          startTimeMilliseconds: null,
+          running: false,
+          elapsedSeconds: 0,
+        );
       }
     } catch (_) {
       _message('ذخیره وضعیت تایمرها ناموفق بود.');
