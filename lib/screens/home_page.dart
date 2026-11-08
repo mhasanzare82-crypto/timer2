@@ -99,7 +99,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _clock(DateTime date) =>
       '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
 
-  Future<void> _restoreContinuousMode() async {\n    try {\n      final value = await AppDatabase.instance.getAppState('continuous_activity_mode');\n      if (mounted && value != null) setState(() => _continuous = value == 'true');\n    } catch (_) {}\n  }\n\n  Future<void> _setContinuous(bool value) async {\n    setState(() => _continuous = value);\n    await AppDatabase.instance.saveAppState('continuous_activity_mode', value.toString());\n  }\n\n  Future<void> _loadActivityNames() async {
+  Future<void> _restoreContinuousMode() async {
+    try {
+      final value = await AppDatabase.instance.getAppState('continuous_activity_mode');
+      if (mounted && value != null) setState(() => _continuous = value == 'true');
+    } catch (_) {}
+  }
+
+  Future<void> _setContinuous(bool value) async {
+    setState(() => _continuous = value);
+    await AppDatabase.instance.saveAppState('continuous_activity_mode', value.toString());
+  }\n\n  Future<void> _loadActivityNames() async {
     try {
       final names = await AppDatabase.instance.getActivityNames();
       if (mounted) setState(() => _activityNames = names);
