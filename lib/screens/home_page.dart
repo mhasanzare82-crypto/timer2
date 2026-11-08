@@ -109,7 +109,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _setContinuous(bool value) async {
     setState(() => _continuous = value);
     await AppDatabase.instance.saveAppState('continuous_activity_mode', value.toString());
-  }\n\n  Future<void> _loadActivityNames() async {
+  }
+
+  Future<void> _loadActivityNames() async {
     try {
       final names = await AppDatabase.instance.getActivityNames();
       if (mounted) setState(() => _activityNames = names);
