@@ -34,7 +34,10 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   bool _finished = false;
   bool _alarmEnabled = true;
   bool _loading = true;
-  bool _saved = false;\n  bool _prompting = false;\n  int _alarmRepeat = 1;\n  bool _alarmSound = true;
+  bool _saved = false;
+  bool _prompting = false;
+  int _alarmRepeat = 1;
+  bool _alarmSound = true;
 
   @override
   void initState() {
@@ -68,7 +71,9 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         _seconds = (data['seconds'] as num?)?.toInt() ?? 0;
         _initialSeconds = (data['initial'] as num?)?.toInt() ?? 0;
         _remainingSeconds = (data['remaining'] as num?)?.toInt() ?? 0;
-        _alarmEnabled = data['alarm'] as bool? ?? true;\n        _alarmRepeat = (data['alarmRepeat'] as num?)?.toInt() ?? 1;\n        _alarmSound = data['alarmSound'] as bool? ?? true;
+        _alarmEnabled = data['alarm'] as bool? ?? true;
+        _alarmRepeat = (data['alarmRepeat'] as num?)?.toInt() ?? 1;
+        _alarmSound = data['alarmSound'] as bool? ?? true;
         _finished = data['finished'] as bool? ?? false;
         _saved = data['saved'] as bool? ?? false;
         _completionPending = data['completionPending'] as bool? ?? false;
@@ -124,7 +129,9 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       'endAt': _endAt?.millisecondsSinceEpoch,
       'running': _running,
       'finished': _finished,
-      'alarm': _alarmEnabled,\n      'alarmRepeat': _alarmRepeat,\n      'alarmSound': _alarmSound,
+      'alarm': _alarmEnabled,
+      'alarmRepeat': _alarmRepeat,
+      'alarmSound': _alarmSound,
       'saved': _saved,
       'completionPending': _completionPending,
     }));
