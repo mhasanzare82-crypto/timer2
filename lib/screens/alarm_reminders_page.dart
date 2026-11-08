@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../database/app_database.dart';
 import '../services/notification_service.dart';
 
@@ -45,10 +47,19 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
   }
 
   Future<void> _chooseDate() async {
-    final picked = await showDatePicker(context: context, initialDate: _scheduledAt,
-      firstDate: DateTime.now(), lastDate: DateTime(2100), helpText: 'تاریخ یادآور');
+    final today = Jalali.now();
+    final initial = Jalali.fromDateTime(_scheduledAt);
+    final picked = await showPersianDatePicker(
+      context: context,
+      initialDate: initial.isBefore(today) ? today : initial,
+      firstDate: today,
+      lastDate: Jalali(1500, 12, 29),
+      helpText: 'تاریخ یادآور',
+      textDirection: TextDirection.rtl,
+    );
     if (picked == null || !mounted) return;
-    setState(() => _scheduledAt = DateTime(picked.year, picked.month, picked.day, _scheduledAt.hour, _scheduledAt.minute));
+    final gregorian = picked.toDateTime();
+    setState(() => _scheduledAt = DateTime(gregorian.year, gregorian.month, gregorian.day, _scheduledAt.hour, _scheduledAt.minute));
   }
 
   Future<void> _chooseTime() async {
@@ -102,7 +113,10 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
     } catch (_) { _showMessage('حذف یادآور ناموفق بود.'); }
   }
 
-  String _formatDate(DateTime d) => '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
+  String _formatDate(DateTime d) {
+    final jalali = Jalali.fromDateTime(d);
+    return '${jalali.year}/${jalali.month.toString().padLeft(2, '0')}/${jalali.day.toString().padLeft(2, '0')}';
+  }
   String _formatTime(DateTime d) => '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
   @override
