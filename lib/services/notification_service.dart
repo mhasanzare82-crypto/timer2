@@ -13,7 +13,8 @@ class NotificationService {
 
   bool _initialized = false;
 
-  static const int _countdownNotificationId = 1001;\n  static const int _countdownMaxRepeats = 3;
+  static const int _countdownNotificationId = 1001;
+  static const int _countdownMaxRepeats = 3;
 
   Future<void> initialize() async {
     if (_initialized) return;
