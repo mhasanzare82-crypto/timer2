@@ -51,7 +51,7 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
     final initial = Jalali.fromDateTime(_scheduledAt);
     final picked = await showPersianDatePicker(
       context: context,
-      initialDate: initial.isBefore(today) ? today : initial,
+      initialDate: _scheduledAt.isBefore(DateTime.now()) ? today : initial,
       firstDate: today,
       lastDate: Jalali(1500, 12, 29),
       helpText: 'تاریخ یادآور',
