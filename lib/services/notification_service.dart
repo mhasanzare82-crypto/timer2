@@ -58,12 +58,20 @@ class NotificationService {
   }) async {
     await initialize();
     final count = repeatCount.clamp(1, _countdownMaxRepeats);
-    for (var i = 0; i < count; i++) {
-      await _plugin.show(
+    await _plugin.show(
+      _countdownNotificationId,
+      'پایان تایمر',
+      'زمان فعالیت «$title» به پایان رسید.',
+      NotificationDetails(android: _countdownDetails(withSound)),
+    );
+    for (var i = 1; i < count; i++) {
+      await _plugin.zonedSchedule(
         _countdownNotificationId + i,
         'پایان تایمر',
         'زمان فعالیت «$title» به پایان رسید.',
+        tz.TZDateTime.now(tz.local).add(Duration(seconds: i * 5)),
         NotificationDetails(android: _countdownDetails(withSound)),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     }
   }
