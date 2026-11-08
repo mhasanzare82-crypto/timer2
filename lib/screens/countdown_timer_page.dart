@@ -101,6 +101,8 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         await NotificationService.instance.scheduleCountdownFinished(
           title: _titleController.text.trim(),
           endTime: _endAt!,
+          repeatCount: _alarmRepeat,
+          withSound: _alarmSound,
         );
       }
     }
@@ -177,6 +179,8 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         await NotificationService.instance.scheduleCountdownFinished(
           title: title,
           endTime: _endAt!,
+          repeatCount: _alarmRepeat,
+          withSound: _alarmSound,
         );
       } else {
         await NotificationService.instance.cancelCountdownFinished();
@@ -239,6 +243,8 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     if (_alarmEnabled) {
       await NotificationService.instance.showCountdownFinished(
         _titleController.text.trim(),
+        withSound: _alarmSound,
+        repeatCount: _alarmRepeat,
       );
     }
     await _complete();
@@ -376,6 +382,8 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
                 await NotificationService.instance.scheduleCountdownFinished(
                   title: _titleController.text.trim(),
                   endTime: _endAt!,
+                  repeatCount: _alarmRepeat,
+                  withSound: _alarmSound,
                 );
               }
               await _persist();
