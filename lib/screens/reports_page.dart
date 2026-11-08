@@ -75,7 +75,7 @@ class _ReportsPageState extends State<ReportsPage> {
     if (value == 'روزانه') {
       from = DateTime(now.year, now.month, now.day);
     } else if (value == 'هفتگی') {
-      from = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+      from = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday % 7));
     } else {
       from = Jalali(j.year, j.month, 1).toDateTime();
     }
@@ -154,6 +154,7 @@ class _ReportsPageState extends State<ReportsPage> {
         'exportedAt': DateTime.now().toIso8601String(),
         'records': _records.map((e) => e.toMap()).toList(),
         'activities': _activities,
+        'appState': await AppDatabase.instance.getAllAppStates(),
       };
       final jsonBytes = utf8.encode(const JsonEncoder.withIndent('  ').convert(payload));
       final archive = Archive()
@@ -188,9 +189,11 @@ class _ReportsPageState extends State<ReportsPage> {
       if (data['format'] != 'timer2-backup' || data['version'] != 1) {
         throw const FormatException('نسخه فایل پشتیبان پشتیبانی نمی‌شود.');
       }
-      final records = (data['records'] as List<dynamic>)
-          .map((e) => TimeRecord.fromMap(Map<String, Object?>.from(e as Map)))
-          .toList();
+      final records = (data['records'] as List<dynamic>).map((e) {
+        final map = Map<String, Object?>.from(e as Map);
+        map['id'] = null;
+        return TimeRecord.fromMap(map);
+      }).toList();
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
@@ -209,6 +212,10 @@ class _ReportsPageState extends State<ReportsPage> {
       final names = (data['activities'] as List<dynamic>? ?? []).cast<String>();
       for (final name in names) {
         await AppDatabase.instance.addActivity(name);
+      }
+      final appState = Map<String, dynamic>.from(data['appState'] as Map? ?? {});
+      for (final entry in appState.entries) {
+        await AppDatabase.instance.saveAppState(entry.key, entry.value as String);
       }
       await _load();
       _message('بازیابی انجام شد؛ رکوردها به اطلاعات فعلی اضافه شدند.');
