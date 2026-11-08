@@ -192,7 +192,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           title: active.controller.text.trim(),
           startTimeMilliseconds: active.running ? active.startedAt?.millisecondsSinceEpoch : null,
           running: active.running,
-          elapsedSeconds: active.currentElapsed.inSeconds,
+          elapsedSeconds: active.running ? active.elapsed.inSeconds : active.currentElapsed.inSeconds,
         );
       } else {
         await HomeWidgetService.updateActivity(
