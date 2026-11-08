@@ -28,18 +28,23 @@ class ActivityTrackingWidgetProvider : AppWidgetProvider() {
             val title = prefs.getString("activity_title", "").orEmpty()
             val startTime = prefs.getLong("activity_start_time", 0L)
             val endTime = prefs.getLong("activity_end_time", 0L)
+            val running = prefs.getBoolean("activity_running", false)
+            val elapsedSeconds = prefs.getInt("activity_elapsed", 0)
             views.setTextViewText(R.id.activity_widget_title, title.ifBlank { "ثبت زمان فعالیت" })
 
             if (startTime > 0L && endTime > 0L) {
                 val durationSeconds = ((endTime - startTime).coerceAtLeast(0L) / 1000L).toInt()
                 views.setViewVisibility(R.id.activity_widget_clock, View.GONE)
                 views.setTextViewText(R.id.activity_widget_status, "مدت ثبت‌شده: ${formatDuration(durationSeconds)}")
-            } else if (startTime > 0L) {
+            } else if (running && startTime > 0L) {
                 val elapsed = (System.currentTimeMillis() - startTime).coerceAtLeast(0L)
                 val base = SystemClock.elapsedRealtime() - elapsed
                 views.setChronometer(R.id.activity_widget_clock, base, "%s", true)
                 views.setViewVisibility(R.id.activity_widget_clock, View.VISIBLE)
                 views.setTextViewText(R.id.activity_widget_status, "در حال ثبت زمان")
+            } else if (elapsedSeconds > 0) {
+                views.setViewVisibility(R.id.activity_widget_clock, View.GONE)
+                views.setTextViewText(R.id.activity_widget_status, "مکث شده: ${formatDuration(elapsedSeconds)}")
             } else {
                 views.setViewVisibility(R.id.activity_widget_clock, View.GONE)
                 views.setTextViewText(R.id.activity_widget_status, "برای شروع ثبت زمان لمس کن")
