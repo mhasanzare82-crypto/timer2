@@ -255,11 +255,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('تاریخ فعالیت'),
-              subtitle: Text(
-                '${_activityDate.year}/'
-                '${_activityDate.month.toString().padLeft(2, '0')}/'
-                '${_activityDate.day.toString().padLeft(2, '0')}',
-              ),
+              subtitle: Text(_formatJalaliDate(_activityDate)),
               trailing: const Icon(Icons.calendar_month),
               onTap: _chooseDate,
             ),
