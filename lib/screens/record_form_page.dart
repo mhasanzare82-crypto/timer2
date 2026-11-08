@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 
 import '../database/app_database.dart';
 import '../models/time_record.dart';
@@ -78,6 +80,11 @@ class _RecordFormPageState extends State<RecordFormPage> {
     _secondsController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  String _formatJalaliDate(DateTime date) {
+    final jalali = Jalali.fromDateTime(date);
+    return '${jalali.year}/${jalali.month.toString().padLeft(2, '0')}/${jalali.day.toString().padLeft(2, '0')}';
   }
 
   int _number(TextEditingController controller) {
