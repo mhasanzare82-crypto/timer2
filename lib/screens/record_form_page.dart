@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 
 import '../database/app_database.dart';
 import '../models/time_record.dart';
@@ -80,25 +82,33 @@ class _RecordFormPageState extends State<RecordFormPage> {
     super.dispose();
   }
 
+  String _formatJalaliDate(DateTime date) {
+    final jalali = Jalali.fromDateTime(date);
+    return '${jalali.year}/${jalali.month.toString().padLeft(2, '0')}/${jalali.day.toString().padLeft(2, '0')}';
+  }
+
   int _number(TextEditingController controller) {
     final number = int.tryParse(controller.text.trim()) ?? 0;
     return number < 0 ? 0 : number;
   }
 
   Future<void> _chooseDate() async {
-    final selected = await showDatePicker(
+    final selected = await showPersianDatePicker(
       context: context,
-      initialDate: _activityDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: Jalali.fromDateTime(_activityDate),
+      firstDate: Jalali(1300, 1, 1),
+      lastDate: Jalali(1500, 12, 29),
+      helpText: 'تاریخ فعالیت',
+      textDirection: TextDirection.rtl,
     );
 
     if (selected != null && mounted) {
+      final gregorian = selected.toDateTime();
       setState(() {
         _activityDate = DateTime(
-          selected.year,
-          selected.month,
-          selected.day,
+          gregorian.year,
+          gregorian.month,
+          gregorian.day,
           _activityDate.hour,
           _activityDate.minute,
         );
@@ -245,11 +255,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('تاریخ فعالیت'),
-              subtitle: Text(
-                '${_activityDate.year}/'
-                '${_activityDate.month.toString().padLeft(2, '0')}/'
-                '${_activityDate.day.toString().padLeft(2, '0')}',
-              ),
+              subtitle: Text(_formatJalaliDate(_activityDate)),
               trailing: const Icon(Icons.calendar_month),
               onTap: _chooseDate,
             ),
