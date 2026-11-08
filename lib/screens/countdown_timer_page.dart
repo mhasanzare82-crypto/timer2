@@ -509,7 +509,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
           ),
           if (_finished) ...[
             const SizedBox(height: 16),
-            const Text(
+            Text(
               _completionRecorded
                   ? 'زمان به پایان رسید و فعالیت ذخیره شد.'
                   : 'زمان به پایان رسید. موضوع فعالیت را ثبت کنید.',
