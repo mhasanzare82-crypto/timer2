@@ -37,6 +37,14 @@ class AppDatabase {
           ON time_records(activityDate)
         ''');
 
+                await db.execute('''
+          CREATE TABLE activity_definitions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            createdAt INTEGER NOT NULL
+          )
+        ''');
+
         await db.execute('''
           CREATE TABLE app_state (
             stateKey TEXT PRIMARY KEY,
