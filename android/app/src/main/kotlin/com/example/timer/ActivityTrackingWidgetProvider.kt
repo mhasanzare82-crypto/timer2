@@ -37,7 +37,8 @@ class ActivityTrackingWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.activity_widget_clock, View.GONE)
                 views.setTextViewText(R.id.activity_widget_status, "مدت ثبت‌شده: ${formatDuration(durationSeconds)}")
             } else if (running && startTime > 0L) {
-                val elapsed = (System.currentTimeMillis() - startTime).coerceAtLeast(0L)
+                val elapsed = elapsedSeconds.coerceAtLeast(0).toLong() * 1000L +
+                    (System.currentTimeMillis() - startTime).coerceAtLeast(0L)
                 val base = SystemClock.elapsedRealtime() - elapsed
                 views.setChronometer(R.id.activity_widget_clock, base, "%s", true)
                 views.setViewVisibility(R.id.activity_widget_clock, View.VISIBLE)
