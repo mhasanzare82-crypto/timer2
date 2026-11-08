@@ -55,12 +55,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   DateTime _now = DateTime.now();
   Timer? _ticker;
   bool _loading = true;
+  List<String> _activityNames = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _restoreTimers();
+    _loadActivityNames();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
@@ -94,6 +96,42 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   String _clock(DateTime date) =>
       '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+
+  Future<void> _loadActivityNames() async {
+    try {
+      final names = await AppDatabase.instance.getActivityNames();
+      if (mounted) setState(() => _activityNames = names);
+    } catch (_) {}
+  }
+
+  Future<void> _chooseActivity(_ActivityTimer timer) async {
+    await _loadActivityNames();
+    if (!mounted) return;
+    if (_activityNames.isEmpty) {
+      _message('ابتدا از صفحه فعالیت‌ها یک فعالیت تعریف کنید.');
+      return;
+    }
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const ListTile(title: Text('انتخاب فعالیت')),
+            ..._activityNames.map((name) => ListTile(
+              title: Text(name),
+              onTap: () => Navigator.pop(context, name),
+            )),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) {
+      timer.controller.text = selected;
+      await _persistTimers();
+      if (mounted) setState(() {});
+    }
+  }
 
   Future<void> _restoreTimers() async {
     try {
@@ -296,6 +334,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 prefixIcon: Icon(Icons.edit_note),
                 border: OutlineInputBorder(),
                 isDense: true,
+                suffixIcon: IconButton(
+                  tooltip: 'انتخاب از فعالیت‌ها',
+                  onPressed: () => _chooseActivity(timer),
+                  icon: const Icon(Icons.arrow_drop_down_circle_outlined),
+                ),
               ),
             ),
             const SizedBox(height: 12),
