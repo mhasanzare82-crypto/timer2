@@ -173,7 +173,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _stateKey,
         jsonEncode(_timers.map((e) => e.toMap()).toList()),
       );
-      final active = _timers.where((e) => e.running || e.elapsed > Duration.zero).firstOrNull;
+      final candidates = _timers.where((e) => e.running || e.elapsed > Duration.zero).toList();
+      final active = candidates.isEmpty ? null : candidates.first;
       if (active != null) {
         await HomeWidgetService.updateActivity(
           title: active.controller.text.trim(),
