@@ -227,6 +227,8 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       _finished = true;
       _remainingSeconds = left;
       _endAt = null;
+      _saved = false;
+      _completionPending = false;
     });
     await _persist();
     _showMessage('تایمر متوقف شد؛ برای شروع مجدد آن را بازنشانی کنید.');
