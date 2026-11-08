@@ -363,8 +363,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               decoration: InputDecoration(
                 labelText: 'نام فعالیت',
                 hintText: 'نام فعالیت را وارد کنید (اختیاری تا زمان توقف)',
-                prefixIcon: Icon(Icons.edit_note),
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.edit_note),
+                border: const OutlineInputBorder(),
                 isDense: true,
                 suffixIcon: IconButton(
                   tooltip: 'انتخاب از فعالیت‌ها',
