@@ -18,7 +18,7 @@ class AppDatabase {
 
     _database = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE time_records (
@@ -37,6 +37,14 @@ class AppDatabase {
           ON time_records(activityDate)
         ''');
 
+                await db.execute('''
+          CREATE TABLE activity_definitions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            createdAt INTEGER NOT NULL
+          )
+        ''');
+
         await db.execute('''
           CREATE TABLE app_state (
             stateKey TEXT PRIMARY KEY,
@@ -45,6 +53,15 @@ class AppDatabase {
         ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE activity_definitions (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT NOT NULL UNIQUE,
+              createdAt INTEGER NOT NULL
+            )
+          ''');
+        }
         if (oldVersion < 2) {
           await db.execute('''
             CREATE TABLE app_state (
@@ -178,4 +195,35 @@ class AppDatabase {
 
     return (result.first['total'] as num).toInt();
   }
+  Future<int> addActivity(String name) async {
+    final db = await database;
+    return db.insert(
+      'activity_definitions',
+      {'name': name.trim(), 'createdAt': DateTime.now().millisecondsSinceEpoch},
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  Future<List<String>> getActivityNames() async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT name FROM activity_definitions
+      UNION
+      SELECT title AS name FROM time_records
+      ORDER BY name COLLATE NOCASE
+    ''');
+    return rows.map((row) => row['name'] as String).toList();
+  }
+
+  Future<List<TimeRecord>> getRecordsForActivity(String title) async {
+    final db = await database;
+    final rows = await db.query(
+      'time_records',
+      where: 'title = ?',
+      whereArgs: [title],
+      orderBy: 'activityDate DESC, id DESC',
+    );
+    return rows.map(TimeRecord.fromMap).toList();
+  }
+
 }
