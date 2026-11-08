@@ -71,6 +71,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         _alarmEnabled = data['alarm'] as bool? ?? true;\n        _alarmRepeat = (data['alarmRepeat'] as num?)?.toInt() ?? 1;\n        _alarmSound = data['alarmSound'] as bool? ?? true;
         _finished = data['finished'] as bool? ?? false;
         _saved = data['saved'] as bool? ?? false;
+        _completionPending = data['completionPending'] as bool? ?? false;
         final start = data['startAt'] as num?;
         final end = data['endAt'] as num?;
         if (start != null) _startAt = DateTime.fromMillisecondsSinceEpoch(start.toInt());
@@ -83,6 +84,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
               _remainingSeconds = 0;
               _running = false;
               _finished = true;
+              _completionPending = true;
               _endAt = null;
             }
           } else {
@@ -106,7 +108,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         );
       }
     }
-    if (_finished && !_saved) await _complete();
+    if (_finished && !_saved && _completionPending) await _complete();
     await _syncWidget();
   }
 
@@ -124,6 +126,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       'finished': _finished,
       'alarm': _alarmEnabled,\n      'alarmRepeat': _alarmRepeat,\n      'alarmSound': _alarmSound,
       'saved': _saved,
+      'completionPending': _completionPending,
     }));
     await _syncWidget();
   }
@@ -240,6 +243,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       _startAt = null;
       _endAt = null;
       _saved = false;
+      _completionPending = false;
     });
     await AppDatabase.instance.deleteAppState(_stateKey);
     await _syncWidget();
@@ -252,6 +256,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     setState(() {
       _running = false;
       _finished = true;
+      _completionPending = true;
       _remainingSeconds = 0;
       _endAt = null;
     });
@@ -314,6 +319,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
             'پایان: ${_jalali(end)} ${_clock(end)}',
       ));
       _saved = true;
+      _completionPending = false;
       await _persist();
       if (mounted) _showMessage('فعالیت در فهرست فعالیت‌ها و گزارش‌ها ثبت شد.');
     } catch (_) {
@@ -533,7 +539,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
                 ),
               ],
             ),
-          if (!_running && _remainingSeconds > 0) ...[
+          if (!_running && (_remainingSeconds > 0 || _finished)) ...[
             const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: _reset,
