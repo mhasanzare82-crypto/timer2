@@ -55,6 +55,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   DateTime _now = DateTime.now();
   Timer? _ticker;
   bool _loading = true;
+  bool _continuous = true;
   List<String> _activityNames = [];
 
   @override
@@ -63,6 +64,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _restoreTimers();
     _loadActivityNames();
+    _restoreContinuousMode();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
@@ -97,7 +99,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _clock(DateTime date) =>
       '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
 
-  Future<void> _loadActivityNames() async {
+  Future<void> _restoreContinuousMode() async {\n    try {\n      final value = await AppDatabase.instance.getAppState('continuous_activity_mode');\n      if (mounted && value != null) setState(() => _continuous = value == 'true');\n    } catch (_) {}\n  }\n\n  Future<void> _setContinuous(bool value) async {\n    setState(() => _continuous = value);\n    await AppDatabase.instance.saveAppState('continuous_activity_mode', value.toString());\n  }\n\n  Future<void> _loadActivityNames() async {
     try {
       final names = await AppDatabase.instance.getActivityNames();
       if (mounted) setState(() => _activityNames = names);
@@ -234,41 +236,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       return;
     }
 
-    var title = timer.controller.text.trim();
-    if (title.isEmpty) {
-      final controller = TextEditingController();
-      final entered = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('نام فعالیت'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'اسم این فعالیت چی بود؟',
-              border: OutlineInputBorder(),
-            ),
+    final controller = TextEditingController(text: timer.controller.text.trim());
+    final entered = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ثبت فعالیت'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            labelText: 'نام فعالیت',
+            border: OutlineInputBorder(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('انصراف'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-              child: const Text('ثبت'),
-            ),
-          ],
+          onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
         ),
-      );
-      controller.dispose();
-      if (entered == null || entered.trim().isEmpty) {
-        await _persistTimers();
-        return;
-      }
-      title = entered.trim();
-      timer.controller.text = title;
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('ثبت'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (entered == null || entered.trim().isEmpty) {
+      await _persistTimers();
+      return;
     }
+    final title = entered.trim();
+    timer.controller.text = title;
 
     final end = DateTime.now();
     final start = timer.firstStartedAt ?? end.subtract(timer.elapsed);
@@ -286,10 +287,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       await AppDatabase.instance.insertRecord(record);
       setState(() {
         _timers.remove(timer);
+        if (_continuous) {
+          final next = _ActivityTimer(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+          );
+          next.firstStartedAt = DateTime.now();
+          next.startedAt = next.firstStartedAt;
+          next.running = true;
+          _timers.add(next);
+        }
       });
       timer.dispose();
       await _persistTimers();
-      _message('فعالیت «$title» ثبت شد.');
+      _message(_continuous
+          ? 'فعالیت «$title» ثبت شد؛ تایمر فعالیت بعدی شروع شد.'
+          : 'فعالیت «$title» ثبت شد.');
     } catch (_) {
       _message('ثبت فعالیت ناموفق بود.');
       await _persistTimers();
@@ -457,7 +469,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
+                Card(
+                  child: SwitchListTile(
+                    title: const Text('فعالیت‌های پیوسته'),
+                    subtitle: Text(_continuous
+                        ? 'پس از ثبت هر فعالیت، تایمر بعدی خودکار شروع می‌شود.'
+                        : 'پس از ثبت هر فعالیت، تایمر متوقف می‌ماند.'),
+                    value: _continuous,
+                    onChanged: _setContinuous,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 SizedBox(
                   height: 52,
                   child: ElevatedButton.icon(
