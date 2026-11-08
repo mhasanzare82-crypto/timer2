@@ -35,6 +35,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   bool _alarmEnabled = true;
   bool _loading = true;
   bool _saved = false;
+  bool _completionPending = false;
   bool _prompting = false;
   int _alarmRepeat = 1;
   bool _alarmSound = true;
@@ -79,7 +80,9 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         _completionPending = data['completionPending'] as bool? ?? false;
         final start = data['startAt'] as num?;
         final end = data['endAt'] as num?;
-        if (start != null) _startAt = DateTime.fromMillisecondsSinceEpoch(start.toInt());
+        if (start != null) {
+          _startAt = DateTime.fromMillisecondsSinceEpoch(start.toInt());
+        }
         if (_running = data['running'] as bool? ?? false) {
           if (end != null) {
             _endAt = DateTime.fromMillisecondsSinceEpoch(end.toInt());
@@ -580,8 +583,8 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
             ),
           ],
           if (_finished)
-            const Padding(
-              padding: EdgeInsets.only(top: 16),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
               child: Text(_saved ? 'زمان به پایان رسید و فعالیت ثبت شد.' : 'تایمر متوقف شده است؛ برای شروع دوباره بازنشانی کنید.',
                   textAlign: TextAlign.center),
             ),
