@@ -37,6 +37,8 @@ class MainActivity : FlutterActivity() {
                             .putString("activity_title", values["title"] as? String ?: "")
                             .putLong("activity_start_time", (values["startTime"] as? Number)?.toLong() ?: 0L)
                             .putLong("activity_end_time", (values["endTime"] as? Number)?.toLong() ?: 0L)
+                            .putBoolean("activity_running", values["running"] as? Boolean ?: false)
+                            .putInt("activity_elapsed", (values["elapsedSeconds"] as? Number)?.toInt() ?: 0)
                             .apply()
                         ActivityTrackingWidgetProvider.updateAll(this)
                         result.success(null)
