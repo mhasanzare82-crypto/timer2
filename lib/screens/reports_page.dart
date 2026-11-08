@@ -75,7 +75,7 @@ class _ReportsPageState extends State<ReportsPage> {
     if (value == 'روزانه') {
       from = DateTime(now.year, now.month, now.day);
     } else if (value == 'هفتگی') {
-      from = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday % 7));
+      from = DateTime(now.year, now.month, now.day).subtract(Duration(days: (now.weekday + 1) % 7));
     } else {
       from = Jalali(j.year, j.month, 1).toDateTime();
     }
