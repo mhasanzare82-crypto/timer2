@@ -213,6 +213,23 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   }
 
   Future<void> _stop() async {
+    if (!_running) return;
+    final left = _endAt == null
+        ? _remainingSeconds
+        : (_endAt!.difference(DateTime.now()).inMilliseconds / 1000).ceil().clamp(0, _initialSeconds);
+    _ticker?.cancel();
+    await NotificationService.instance.cancelCountdownFinished();
+    setState(() {
+      _running = false;
+      _finished = true;
+      _remainingSeconds = left;
+      _endAt = null;
+    });
+    await _persist();
+    _showMessage('تایمر متوقف شد؛ برای شروع مجدد آن را بازنشانی کنید.');
+  }
+
+  Future<void> _reset() async {
     _ticker?.cancel();
     await NotificationService.instance.cancelCountdownFinished();
     setState(() {
@@ -226,7 +243,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
     });
     await AppDatabase.instance.deleteAppState(_stateKey);
     await _syncWidget();
-    _showMessage('این نوبت لغو شد و در فعالیت‌ها ثبت نمی‌شود.');
+    _showMessage('تایمر بازنشانی شد.');
   }
 
   Future<void> _finish() async {
@@ -511,7 +528,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
                   child: FilledButton.tonalIcon(
                     onPressed: _stop,
                     icon: const Icon(Icons.stop),
-                    label: const Text('توقف و لغو'),
+                    label: const Text('توقف'),
                   ),
                 ),
               ],
@@ -519,15 +536,15 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
           if (!_running && _remainingSeconds > 0) ...[
             const SizedBox(height: 10),
             OutlinedButton.icon(
-              onPressed: _stop,
-              icon: const Icon(Icons.stop),
-              label: const Text('توقف و لغو نوبت'),
+              onPressed: _reset,
+              icon: const Icon(Icons.restart_alt),
+              label: const Text('بازنشانی'),
             ),
           ],
           if (_finished)
             const Padding(
               padding: EdgeInsets.only(top: 16),
-              child: Text('زمان به پایان رسید و فعالیت در صفحه فعالیت‌ها ثبت شد.',
+              child: Text(_saved ? 'زمان به پایان رسید و فعالیت ثبت شد.' : 'تایمر متوقف شده است؛ برای شروع دوباره بازنشانی کنید.',
                   textAlign: TextAlign.center),
             ),
         ],
