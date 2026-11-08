@@ -82,6 +82,11 @@ class _RecordFormPageState extends State<RecordFormPage> {
     super.dispose();
   }
 
+  String _formatJalaliDate(DateTime date) {
+    final jalali = Jalali.fromDateTime(date);
+    return '${jalali.year}/${jalali.month.toString().padLeft(2, '0')}/${jalali.day.toString().padLeft(2, '0')}';
+  }
+
   int _number(TextEditingController controller) {
     final number = int.tryParse(controller.text.trim()) ?? 0;
     return number < 0 ? 0 : number;
