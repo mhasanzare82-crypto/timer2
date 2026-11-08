@@ -9,6 +9,7 @@ import '../models/time_record.dart';
 import '../utils/time_formatter.dart';
 import '../services/home_widget_service.dart';
 import 'countdown_timer_page.dart';
+import 'activities_page.dart';
 import 'record_form_page.dart';
 import 'reports_page.dart';
 import 'alarm_reminders_page.dart';
@@ -267,6 +268,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         MaterialPageRoute(builder: (_) => const AlarmRemindersPage()));
   }
 
+  Future<void> _openActivities() async {
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const ActivitiesPage()));
+  }
+
   Future<void> _openReports() async {
     await Navigator.push(context,
         MaterialPageRoute(builder: (_) => const ReportsPage()));
@@ -354,6 +360,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         title: const Text('ثبت زمان'),
         centerTitle: true,
         actions: [
+          IconButton(
+            onPressed: _openActivities,
+            icon: const Icon(Icons.list_alt),
+            tooltip: 'فعالیت‌ها',
+          ),
           IconButton(
             onPressed: _openReminders,
             icon: const Icon(Icons.notifications_active_outlined),
