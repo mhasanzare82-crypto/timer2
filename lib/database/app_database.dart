@@ -108,6 +108,15 @@ class AppDatabase {
     return rows.first['stateValue'] as String;
   }
 
+  Future<Map<String, String>> getAllAppStates() async {
+    final db = await database;
+    final rows = await db.query('app_state');
+    return {
+      for (final row in rows)
+        row['stateKey'] as String: row['stateValue'] as String,
+    };
+  }
+
   Future<void> deleteAppState(String key) async {
     final db = await database;
 
