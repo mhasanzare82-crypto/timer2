@@ -20,6 +20,7 @@ class _ActivityTimer {
   final String id;
   final TextEditingController controller;
   DateTime? startedAt;
+  DateTime? firstStartedAt;
   Duration elapsed = Duration.zero;
   bool running = false;
 
@@ -32,6 +33,7 @@ class _ActivityTimer {
         'id': id,
         'title': controller.text,
         'startedAt': startedAt?.millisecondsSinceEpoch,
+        'firstStartedAt': firstStartedAt?.millisecondsSinceEpoch,
         'elapsedMs': elapsed.inMilliseconds,
         'running': running,
       };
@@ -107,6 +109,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           timer.startedAt = started == null
               ? null
               : DateTime.fromMillisecondsSinceEpoch(started.toInt());
+          final firstStarted = map['firstStartedAt'] as num?;
+          timer.firstStartedAt = firstStarted == null
+              ? timer.startedAt
+              : DateTime.fromMillisecondsSinceEpoch(firstStarted.toInt());
           timer.elapsed = Duration(
             milliseconds: (map['elapsedMs'] as num?)?.toInt() ?? 0,
           );
@@ -126,7 +132,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _stateKey,
         jsonEncode(_timers.map((e) => e.toMap()).toList()),
       );
-      final active = _timers.where((e) => e.running).firstOrNull;
+      final activeTimers = _timers.where((e) => e.running).toList();
+      final active = activeTimers.isEmpty ? null : activeTimers.first;
       if (active != null) {
         await HomeWidgetService.updateActivity(
           title: active.controller.text.trim(),
@@ -159,7 +166,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _start(_ActivityTimer timer) async {
     if (timer.running) return;
     setState(() {
-      timer.startedAt ??= DateTime.now();
+      final now = DateTime.now();
+      timer.firstStartedAt ??= now;
+      timer.startedAt = now;
       timer.running = true;
     });
     await _persistTimers();
@@ -223,9 +232,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
 
     final end = DateTime.now();
-    final start = timer.startedAt == null
-        ? end.subtract(timer.elapsed)
-        : timer.startedAt!;
+    final start = timer.firstStartedAt ?? end.subtract(timer.elapsed);
     final record = TimeRecord(
       title: title,
       category: 'عمومی',
