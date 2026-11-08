@@ -181,7 +181,8 @@ class _ReportsPageState extends State<ReportsPage> {
       );
       if (picked == null || picked.files.single.bytes == null) return;
       final archive = ZipDecoder().decodeBytes(picked.files.single.bytes!);
-      final file = archive.files.where((f) => f.name == 'timer2-backup.json').firstOrNull;
+      final backupFiles = archive.files.where((f) => f.name == 'timer2-backup.json').toList();
+      final file = backupFiles.isEmpty ? null : backupFiles.first;
       if (file == null) throw const FormatException('فایل پشتیبان معتبر نیست.');
       final data = jsonDecode(utf8.decode(file.content as List<int>)) as Map<String, dynamic>;
       if (data['format'] != 'timer2-backup' || data['version'] != 1) {
