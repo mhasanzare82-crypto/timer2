@@ -433,9 +433,19 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
                 DropdownMenuItem(value: 2, child: Text('دو بار')),
                 DropdownMenuItem(value: 3, child: Text('سه بار')),
               ],
-              onChanged: (value) {
-                if (value != null) setState(() => _alarmRepeat = value);
-                _persist();
+              onChanged: (value) async {
+                if (value == null) return;
+                setState(() => _alarmRepeat = value);
+                if (_running && _endAt != null && _alarmEnabled) {
+                  await NotificationService.instance.cancelCountdownFinished();
+                  await NotificationService.instance.scheduleCountdownFinished(
+                    title: _titleController.text.trim(),
+                    endTime: _endAt!,
+                    repeatCount: _alarmRepeat,
+                    withSound: _alarmSound,
+                  );
+                }
+                await _persist();
               },
             ),
             const SizedBox(height: 8),
@@ -443,9 +453,18 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
               contentPadding: EdgeInsets.zero,
               title: const Text('پخش صدای هشدار'),
               value: _alarmSound,
-              onChanged: (value) {
+              onChanged: (value) async {
                 setState(() => _alarmSound = value);
-                _persist();
+                if (_running && _endAt != null && _alarmEnabled) {
+                  await NotificationService.instance.cancelCountdownFinished();
+                  await NotificationService.instance.scheduleCountdownFinished(
+                    title: _titleController.text.trim(),
+                    endTime: _endAt!,
+                    repeatCount: _alarmRepeat,
+                    withSound: _alarmSound,
+                  );
+                }
+                await _persist();
               },
             ),
           ],
