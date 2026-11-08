@@ -74,7 +74,15 @@ class ActivityTrackingWidgetProvider : AppWidgetProvider() {
                     val elapsed = timer.optLong("elapsedMs", 0L) +
                         if (running) (System.currentTimeMillis() - timer.optLong("startedAt", 0L)).coerceAtLeast(0L) else 0L
                     row.setTextViewText(R.id.widget_timer_title, title)
-                    row.setTextViewText(R.id.widget_timer_elapsed, formatDuration((elapsed / 1000L).toInt()))
+                    if (running) {
+                        row.setChronometer(R.id.widget_timer_elapsed,
+                            SystemClock.elapsedRealtime() - elapsed, "%s", true)
+                    } else {
+                        row.setChronometer(R.id.widget_timer_elapsed,
+                            SystemClock.elapsedRealtime(), "%s", false)
+                        row.setTextViewText(R.id.widget_timer_elapsed,
+                            formatDuration((elapsed / 1000L).toInt()))
+                    }
                     row.setTextViewText(R.id.widget_timer_state, if (running) "در حال اجرا" else "متوقف")
                     val timerId = timer.optString("id")
                     row.setOnClickPendingIntent(R.id.widget_timer_pause,
