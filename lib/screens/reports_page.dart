@@ -28,8 +28,13 @@ class _ReportsPageState extends State<ReportsPage> {
     final dayStart = DateTime(now.year, now.month, now.day);
     final nextDay = dayStart.add(const Duration(days: 1));
 
-    final monthStart = DateTime(now.year, now.month);
-    final nextMonth = DateTime(now.year, now.month + 1);
+    final jalaliNow = Jalali.fromDateTime(now);
+    final monthStartJalali = Jalali(jalaliNow.year, jalaliNow.month, 1);
+    final nextMonthJalali = jalaliNow.month == 12
+        ? Jalali(jalaliNow.year + 1, 1, 1)
+        : Jalali(jalaliNow.year, jalaliNow.month + 1, 1);
+    final monthStart = monthStartJalali.toDateTime();
+    final nextMonth = nextMonthJalali.toDateTime();
 
     final daily = await AppDatabase.instance.getTotalSeconds(
       start: dayStart,
