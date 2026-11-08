@@ -419,6 +419,31 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
           ],
           if (editable) ...[
             const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final preset in [
+                  ('۵ دقیقه', 0, 5),
+                  ('۱۵ دقیقه', 0, 15),
+                  ('۲۵ دقیقه', 0, 25),
+                  ('۴۵ دقیقه', 0, 45),
+                  ('۱ ساعت', 1, 0),
+                ])
+                  ActionChip(
+                    label: Text(preset.$1),
+                    onPressed: () => setState(() {
+                      _hours = preset.$2;
+                      _minutes = preset.$3;
+                      _seconds = 0;
+                      _initialSeconds = 0;
+                      _remainingSeconds = 0;
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 _wheel(value: _hours, count: 24, label: 'ساعت',
