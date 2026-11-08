@@ -13,7 +13,7 @@ class NotificationService {
 
   bool _initialized = false;
 
-  static const int _countdownNotificationId = 1001;
+  static const int _countdownNotificationId = 1001;\n  static const int _countdownMaxRepeats = 3;
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -40,69 +40,68 @@ class NotificationService {
     _initialized = true;
   }
 
-  Future<void> showCountdownFinished(String title) async {
+  AndroidNotificationDetails _countdownDetails(bool withSound) =>
+      AndroidNotificationDetails(
+        withSound ? 'countdown_timer_channel_sound' : 'countdown_timer_channel_silent',
+        'هشدار تایمر',
+        channelDescription: 'اعلان پایان شمارش معکوس',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: withSound,
+        enableVibration: true,
+      );
+
+  Future<void> showCountdownFinished(
+    String title, {
+    bool withSound = true,
+    int repeatCount = 1,
+  }) async {
     await initialize();
-
-    const androidDetails = AndroidNotificationDetails(
-      'countdown_timer_channel',
-      'هشدار تایمر',
-      channelDescription: 'اعلان پایان شمارش معکوس',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-      enableVibration: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-    );
-
-    await _plugin.show(
-      _countdownNotificationId,
-      'پایان تایمر',
-      'زمان فعالیت «$title» به پایان رسید.',
-      details,
-    );
+    final count = repeatCount.clamp(1, _countdownMaxRepeats);
+    for (var i = 0; i < count; i++) {
+      await _plugin.show(
+        _countdownNotificationId + i,
+        'پایان تایمر',
+        'زمان فعالیت «$title» به پایان رسید.',
+        NotificationDetails(android: _countdownDetails(withSound)),
+      );
+    }
   }
 
   Future<void> scheduleCountdownFinished({
     required String title,
     required DateTime endTime,
+    int repeatCount = 1,
+    bool withSound = true,
   }) async {
     await initialize();
-
+    final count = repeatCount.clamp(1, _countdownMaxRepeats);
     if (!endTime.isAfter(DateTime.now())) {
-      await showCountdownFinished(title);
+      await showCountdownFinished(
+        title,
+        withSound: withSound,
+        repeatCount: count,
+      );
       return;
     }
 
-    const androidDetails = AndroidNotificationDetails(
-      'countdown_timer_channel',
-      'هشدار تایمر',
-      channelDescription: 'اعلان پایان شمارش معکوس',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-      enableVibration: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-    );
-
-    await _plugin.zonedSchedule(
-      _countdownNotificationId,
-      'پایان تایمر',
-      'زمان فعالیت «$title» به پایان رسید.',
-      tz.TZDateTime.from(endTime, tz.local),
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-    );
+    for (var i = 0; i < count; i++) {
+      await _plugin.zonedSchedule(
+        _countdownNotificationId + i,
+        'پایان تایمر',
+        'زمان فعالیت «$title» به پایان رسید.',
+        tz.TZDateTime.from(endTime.add(Duration(seconds: i * 5)), tz.local),
+        NotificationDetails(android: _countdownDetails(withSound)),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
   }
 
   Future<void> cancelCountdownFinished() async {
     await initialize();
-    await _plugin.cancel(_countdownNotificationId);
+    for (var i = 0; i < _countdownMaxRepeats; i++) {
+      await _plugin.cancel(_countdownNotificationId + i);
+    }
   }
 
   Future<void> scheduleReminder({
