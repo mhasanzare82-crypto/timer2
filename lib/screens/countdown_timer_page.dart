@@ -34,7 +34,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   bool _finished = false;
   bool _alarmEnabled = true;
   bool _loading = true;
-  bool _saved = false;
+  bool _saved = false;\n  bool _prompting = false;\n  int _alarmRepeat = 1;\n  bool _alarmSound = true;
 
   @override
   void initState() {
@@ -68,7 +68,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         _seconds = (data['seconds'] as num?)?.toInt() ?? 0;
         _initialSeconds = (data['initial'] as num?)?.toInt() ?? 0;
         _remainingSeconds = (data['remaining'] as num?)?.toInt() ?? 0;
-        _alarmEnabled = data['alarm'] as bool? ?? true;
+        _alarmEnabled = data['alarm'] as bool? ?? true;\n        _alarmRepeat = (data['alarmRepeat'] as num?)?.toInt() ?? 1;\n        _alarmSound = data['alarmSound'] as bool? ?? true;
         _finished = data['finished'] as bool? ?? false;
         _saved = data['saved'] as bool? ?? false;
         final start = data['startAt'] as num?;
@@ -120,7 +120,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       'endAt': _endAt?.millisecondsSinceEpoch,
       'running': _running,
       'finished': _finished,
-      'alarm': _alarmEnabled,
+      'alarm': _alarmEnabled,\n      'alarmRepeat': _alarmRepeat,\n      'alarmSound': _alarmSound,
       'saved': _saved,
     }));
     await _syncWidget();
@@ -245,12 +245,44 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
   }
 
   Future<void> _complete() async {
-    if (_saved || _startAt == null || _initialSeconds <= 0) return;
+    if (_saved || _prompting || _startAt == null || _initialSeconds <= 0 || !mounted) return;
+    _prompting = true;
+    final controller = TextEditingController(text: _titleController.text.trim());
+    final title = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('زمان به پایان رسید'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'موضوع فعالیت',
+            hintText: 'نام فعالیتی که انجام دادید',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('ثبت فعالیت'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    _prompting = false;
+    if (title == null || title.trim().isEmpty || !mounted) {
+      _showMessage('برای ذخیره، نام فعالیت را وارد کنید.');
+      return;
+    }
+    _titleController.text = title.trim();
     final end = DateTime.now();
     final start = _startAt!;
     try {
       await AppDatabase.instance.insertRecord(TimeRecord(
-        title: _titleController.text.trim(),
+        title: title.trim(),
         category: 'تایمر',
         durationSeconds: _initialSeconds,
         createdAt: end,
@@ -260,7 +292,7 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       ));
       _saved = true;
       await _persist();
-      if (mounted) _showMessage('تایمر تمام شد و فعالیت ثبت شد.');
+      if (mounted) _showMessage('فعالیت در فهرست فعالیت‌ها و گزارش‌ها ثبت شد.');
     } catch (_) {
       if (mounted) _showMessage('تایمر تمام شد، اما ذخیره فعالیت ناموفق بود.');
     }
@@ -349,6 +381,34 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
               await _persist();
             },
           ),
+          if (_alarmEnabled) ...[
+            DropdownButtonFormField<int>(
+              value: _alarmRepeat,
+              decoration: const InputDecoration(
+                labelText: 'تعداد دفعات هشدار',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 1, child: Text('یک بار')),
+                DropdownMenuItem(value: 2, child: Text('دو بار')),
+                DropdownMenuItem(value: 3, child: Text('سه بار')),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _alarmRepeat = value);
+                _persist();
+              },
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('پخش صدای هشدار'),
+              value: _alarmSound,
+              onChanged: (value) {
+                setState(() => _alarmSound = value);
+                _persist();
+              },
+            ),
+          ],
           if (editable) ...[
             const SizedBox(height: 8),
             Row(
