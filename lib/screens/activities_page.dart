@@ -84,17 +84,29 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final name = _activities[index];
-                    return Card(
-                      child: ListTile(
-                        title: Text(name),
-                        trailing: const Icon(Icons.chevron_left),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ActivityDetailPage(title: name),
+                    return FutureBuilder<List<TimeRecord>>(
+                      future: AppDatabase.instance.getRecordsForActivity(name),
+                      builder: (context, snapshot) {
+                        final records = snapshot.data ?? const <TimeRecord>[];
+                        final total = records.fold<int>(
+                          0, (sum, record) => sum + record.durationSeconds,
+                        );
+                        return Card(
+                          child: ListTile(
+                            title: Text(name),
+                            subtitle: snapshot.connectionState == ConnectionState.waiting
+                                ? const Text('در حال محاسبه زمان...')
+                                : Text('${records.length} نوبت • مجموع ${TimeFormatter.format(total)}'),
+                            trailing: const Icon(Icons.chevron_left),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ActivityDetailPage(title: name),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 ),
