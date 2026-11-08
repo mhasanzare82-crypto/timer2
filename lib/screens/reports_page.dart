@@ -68,6 +68,9 @@ class _ReportsPageState extends State<ReportsPage> {
     return '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}';
   }
 
+  String _time(DateTime value) =>
+      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+
   Future<void> _preset(String value) async {
     final now = DateTime.now();
     final j = Jalali.fromDateTime(now);
@@ -118,6 +121,8 @@ class _ReportsPageState extends State<ReportsPage> {
       sheet.appendRow([
         TextCellValue('نام فعالیت'),
         TextCellValue('تاریخ شمسی'),
+        TextCellValue('شروع'),
+        TextCellValue('پایان'),
         TextCellValue('مدت (ثانیه)'),
         TextCellValue('مدت'),
         TextCellValue('یادداشت'),
@@ -126,6 +131,8 @@ class _ReportsPageState extends State<ReportsPage> {
         sheet.appendRow([
           TextCellValue(item.title),
           TextCellValue(_date(item.activityDate)),
+          TextCellValue(_time(item.activityDate)),
+          TextCellValue(_time(item.createdAt)),
           IntCellValue(item.durationSeconds),
           TextCellValue(TimeFormatter.format(item.durationSeconds)),
           TextCellValue(item.note ?? ''),
@@ -303,7 +310,7 @@ class _ReportsPageState extends State<ReportsPage> {
             ...filtered.map((record) => Card(
               child: ListTile(
                 title: Text(record.title),
-                subtitle: Text('${_date(record.activityDate)} • ${TimeFormatter.format(record.durationSeconds)}'),
+                subtitle: Text('${_date(record.activityDate)} • ${_time(record.activityDate)} تا ${_time(record.createdAt)} • ${TimeFormatter.format(record.durationSeconds)}'),
                 trailing: Text(TimeFormatter.clock(record.durationSeconds)),
               ),
             )),
