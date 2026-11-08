@@ -10,7 +10,6 @@ import '../utils/time_formatter.dart';
 import '../services/home_widget_service.dart';
 import 'countdown_timer_page.dart';
 import 'activities_page.dart';
-import 'record_form_page.dart';
 import 'reports_page.dart';
 import 'alarm_reminders_page.dart';
 
@@ -102,7 +101,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _restoreContinuousMode() async {
     try {
       final value = await AppDatabase.instance.getAppState('continuous_activity_mode');
-      if (mounted && value != null) setState(() => _continuous = value == 'true');
+      if (mounted && value != null) {
+        setState(() => _continuous = value == 'true');
+      }
     } catch (_) {}
   }
 
@@ -359,7 +360,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               controller: timer.controller,
               onChanged: (_) => _persistTimers(),
               textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'نام فعالیت',
                 hintText: 'نام فعالیت را وارد کنید (اختیاری تا زمان توقف)',
                 prefixIcon: Icon(Icons.edit_note),
