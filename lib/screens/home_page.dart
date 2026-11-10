@@ -7,6 +7,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../utils/time_formatter.dart';
+import '../utils/jalali_date_storage.dart';
 import '../services/home_widget_service.dart';
 import 'countdown_timer_page.dart';
 import 'activities_page.dart';
@@ -32,8 +33,8 @@ class _ActivityTimer {
   Map<String, Object?> toMap() => {
         'id': id,
         'title': controller.text,
-        'startedAt': startedAt?.millisecondsSinceEpoch,
-        'firstStartedAt': firstStartedAt?.millisecondsSinceEpoch,
+        'startedAt': startedAt == null ? null : JalaliDateStorage.encode(startedAt!),
+        'firstStartedAt': firstStartedAt == null ? null : JalaliDateStorage.encode(firstStartedAt!),
         'elapsedMs': elapsed.inMilliseconds,
         'running': running,
       };
@@ -227,14 +228,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             id: map['id'] as String,
             title: map['title'] as String? ?? '',
           );
-          final started = map['startedAt'] as num?;
-          timer.startedAt = started == null
-              ? null
-              : DateTime.fromMillisecondsSinceEpoch(started.toInt());
-          final firstStarted = map['firstStartedAt'] as num?;
-          timer.firstStartedAt = firstStarted == null
-              ? timer.startedAt
-              : DateTime.fromMillisecondsSinceEpoch(firstStarted.toInt());
+          final started = map['startedAt'];
+          timer.startedAt = started == null ? null : JalaliDateStorage.decode(started);
+          final firstStarted = map['firstStartedAt'];
+          timer.firstStartedAt = firstStarted == null ? timer.startedAt : JalaliDateStorage.decode(firstStarted);
           timer.elapsed = Duration(
             milliseconds: (map['elapsedMs'] as num?)?.toInt() ?? 0,
           );
