@@ -372,8 +372,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
 
     try {
-      await AppDatabase.instance.addActivity(title);
-      await AppDatabase.instance.insertRecord(record);
+      await AppDatabase.instance.saveActivityRecord(record);
       setState(() {
         _timers.remove(timer);
         if (_continuous) {
