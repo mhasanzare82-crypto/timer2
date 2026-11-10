@@ -25,8 +25,8 @@ class TimeRecord {
       'title': title,
       'category': category,
       'durationSeconds': durationSeconds,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'activityDate': activityDate.millisecondsSinceEpoch,
+      'createdAt': JalaliDateStorage.encode(createdAt),
+      'activityDate': JalaliDateStorage.encode(activityDate),
       'note': note,
     };
   }
