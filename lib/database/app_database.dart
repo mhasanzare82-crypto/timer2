@@ -18,7 +18,7 @@ class AppDatabase {
 
     _database = await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE time_records (
@@ -53,9 +53,9 @@ class AppDatabase {
         ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 3) {
+        if (oldVersion < 4) {
           await db.execute('''
-            CREATE TABLE activity_definitions (
+            CREATE TABLE IF NOT EXISTS activity_definitions (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               name TEXT NOT NULL UNIQUE,
               createdAt INTEGER NOT NULL
