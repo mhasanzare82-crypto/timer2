@@ -11,6 +11,11 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.example.timer/home_widgets")
             .setMethodCallHandler { call, result ->
                 val preferences = getSharedPreferences("TimerWidgetPrefs", Context.MODE_PRIVATE)
+                preferences.edit()
+                    .remove("activity_start_time")
+                    .remove("activity_end_time")
+                    .remove("countdown_end_time")
+                    .apply()
                 when (call.method) {
                     "updateCountdownWidget" -> {
                         val values = call.arguments as? Map<*, *>
