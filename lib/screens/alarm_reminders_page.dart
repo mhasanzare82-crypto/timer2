@@ -4,6 +4,7 @@ import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../database/app_database.dart';
 import '../services/notification_service.dart';
+import '../utils/jalali_date_storage.dart';
 
 class AlarmRemindersPage extends StatefulWidget {
   const AlarmRemindersPage({super.key});
@@ -30,7 +31,7 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
       if (!mounted) return;
       setState(() {
         _reminders = decoded.map((item) => Map<String, dynamic>.from(item as Map)).toList()
-          ..sort((a, b) => (a['scheduledAt'] as int).compareTo(b['scheduledAt'] as int));
+          ..sort((a, b) => JalaliDateStorage.decode(a['scheduledAt']).compareTo(JalaliDateStorage.decode(b['scheduledAt'])));
         _loading = false;
       });
     } catch (_) {
@@ -87,7 +88,7 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
       final reminder = <String, dynamic>{
         'id': id,
         'title': title,
-        'scheduledAt': scheduledAt.millisecondsSinceEpoch,
+        'scheduledAt': JalaliDateStorage.encode(scheduledAt),
         'daily': _daily,
       };
       await NotificationService.instance.scheduleReminder(
@@ -148,7 +149,7 @@ class _AlarmRemindersPageState extends State<AlarmRemindersPage> {
         const SizedBox(height: 8),
         if (_reminders.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('هنوز یادآوری ثبت نشده است.', textAlign: TextAlign.center))
         else ..._reminders.map((r) {
-          final date = DateTime.fromMillisecondsSinceEpoch(r['scheduledAt'] as int);
+          final date = JalaliDateStorage.decode(r['scheduledAt']);
           final daily = r['daily'] as bool? ?? false;
           return Card(child: ListTile(
             leading: Icon(daily ? Icons.repeat : Icons.notifications_outlined, color: Theme.of(context).colorScheme.primary),

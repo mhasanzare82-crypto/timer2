@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../utils/time_formatter.dart';
+import '../utils/jalali_date_storage.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -157,8 +158,9 @@ class _ReportsPageState extends State<ReportsPage> {
     try {
       final payload = {
         'format': 'timer2-backup',
-        'version': 1,
-        'exportedAt': DateTime.now().toIso8601String(),
+        'version': 2,
+        'dateFormat': 'jalali-yyyy/MM/dd HH:mm:ss.SSS',
+        'exportedAt': JalaliDateStorage.encode(DateTime.now()),
         'records': _records.map((e) => e.toMap()).toList(),
         'activities': _activities,
         'appState': await AppDatabase.instance.getAllAppStates(),
@@ -193,7 +195,8 @@ class _ReportsPageState extends State<ReportsPage> {
       final file = backupFiles.isEmpty ? null : backupFiles.first;
       if (file == null) throw const FormatException('فایل پشتیبان معتبر نیست.');
       final data = jsonDecode(utf8.decode(file.content as List<int>)) as Map<String, dynamic>;
-      if (data['format'] != 'timer2-backup' || data['version'] != 1) {
+      if (data['format'] != 'timer2-backup' ||
+          (data['version'] != 1 && data['version'] != 2)) {
         throw const FormatException('نسخه فایل پشتیبان پشتیبانی نمی‌شود.');
       }
       final records = (data['records'] as List<dynamic>).map((e) {

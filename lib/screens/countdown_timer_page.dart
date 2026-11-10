@@ -10,6 +10,7 @@ import '../models/time_record.dart';
 import '../services/home_widget_service.dart';
 import '../services/notification_service.dart';
 import '../utils/time_formatter.dart';
+import '../utils/jalali_date_storage.dart';
 
 class CountdownTimerPage extends StatefulWidget {
   const CountdownTimerPage({super.key});
@@ -78,14 +79,14 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         _finished = data['finished'] as bool? ?? false;
         _saved = data['saved'] as bool? ?? false;
         _completionPending = data['completionPending'] as bool? ?? false;
-        final start = data['startAt'] as num?;
-        final end = data['endAt'] as num?;
+        final start = data['startAt'];
+        final end = data['endAt'];
         if (start != null) {
-          _startAt = DateTime.fromMillisecondsSinceEpoch(start.toInt());
+          _startAt = JalaliDateStorage.decode(start);
         }
         if (_running = data['running'] as bool? ?? false) {
           if (end != null) {
-            _endAt = DateTime.fromMillisecondsSinceEpoch(end.toInt());
+            _endAt = JalaliDateStorage.decode(end);
             _remainingSeconds =
                 (_endAt!.difference(DateTime.now()).inMilliseconds / 1000).ceil();
             if (_remainingSeconds <= 0) {
@@ -128,8 +129,8 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
       'seconds': _seconds,
       'initial': _initialSeconds,
       'remaining': _remainingSeconds,
-      'startAt': _startAt?.millisecondsSinceEpoch,
-      'endAt': _endAt?.millisecondsSinceEpoch,
+      'startAt': _startAt == null ? null : JalaliDateStorage.encode(_startAt!),
+      'endAt': _endAt == null ? null : JalaliDateStorage.encode(_endAt!),
       'running': _running,
       'finished': _finished,
       'alarm': _alarmEnabled,
@@ -145,7 +146,6 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         title: _titleController.text.trim(),
         running: _running,
         remainingSeconds: _remainingSeconds,
-        endTimeMilliseconds: _endAt?.millisecondsSinceEpoch,
       );
 
   void _startTicker() {

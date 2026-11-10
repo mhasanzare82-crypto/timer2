@@ -1,3 +1,5 @@
+import '../utils/jalali_date_storage.dart';
+
 class TimeRecord {
   final int? id;
   final String title;
@@ -23,8 +25,8 @@ class TimeRecord {
       'title': title,
       'category': category,
       'durationSeconds': durationSeconds,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'activityDate': activityDate.millisecondsSinceEpoch,
+      'createdAt': JalaliDateStorage.encode(createdAt),
+      'activityDate': JalaliDateStorage.encode(activityDate),
       'note': note,
     };
   }
@@ -35,12 +37,8 @@ class TimeRecord {
       title: map['title'] as String,
       category: map['category'] as String,
       durationSeconds: map['durationSeconds'] as int,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        map['createdAt'] as int,
-      ),
-      activityDate: DateTime.fromMillisecondsSinceEpoch(
-        map['activityDate'] as int,
-      ),
+      createdAt: JalaliDateStorage.decode(map['createdAt']),
+      activityDate: JalaliDateStorage.decode(map['activityDate']),
       note: map['note'] as String?,
     );
   }
