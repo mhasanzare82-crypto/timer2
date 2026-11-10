@@ -40,9 +40,6 @@ class ActivityTrackingWidgetProvider : AppWidgetProvider() {
                 views.setChronometer(R.id.activity_widget_clock, base, "%s", true)
                 views.setViewVisibility(R.id.activity_widget_clock, View.VISIBLE)
                 views.setTextViewText(R.id.activity_widget_status, "در حال ثبت زمان")
-            } else if (elapsedSeconds > 0) {
-                views.setViewVisibility(R.id.activity_widget_clock, View.GONE)
-                views.setTextViewText(R.id.activity_widget_status, "مکث شده: ${formatDuration(elapsedSeconds)}")
             } else {
                 views.setViewVisibility(R.id.activity_widget_clock, View.GONE)
                 views.setTextViewText(R.id.activity_widget_status, "برای شروع ثبت زمان لمس کن")
