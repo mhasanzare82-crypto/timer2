@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../database/app_database.dart';
 import '../models/time_record.dart';
 import '../utils/time_formatter.dart';
+import '../utils/jalali_date_storage.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -158,7 +159,7 @@ class _ReportsPageState extends State<ReportsPage> {
       final payload = {
         'format': 'timer2-backup',
         'version': 1,
-        'exportedAt': DateTime.now().toIso8601String(),
+        'exportedAt': JalaliDateStorage.encode(DateTime.now()),
         'records': _records.map((e) => e.toMap()).toList(),
         'activities': _activities,
         'appState': await AppDatabase.instance.getAllAppStates(),
