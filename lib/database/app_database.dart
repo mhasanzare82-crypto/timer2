@@ -132,6 +132,27 @@ class AppDatabase {
     return db.insert('time_records', record.toMap());
   }
 
+  Future<int> saveActivityRecord(TimeRecord record) async {
+    final db = await database;
+    final title = record.title.trim();
+    if (title.isEmpty) {
+      throw ArgumentError('نام فعالیت نمی‌تواند خالی باشد.');
+    }
+    return db.transaction((txn) async {
+      await txn.insert(
+        'activity_definitions',
+        {
+          'name': title,
+          'createdAt': DateTime.now().millisecondsSinceEpoch,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+      final values = record.toMap();
+      values['title'] = title;
+      return txn.insert('time_records', values);
+    });
+  }
+
   Future<List<TimeRecord>> getAllRecords() async {
     final db = await database;
 
