@@ -10,14 +10,12 @@ class HomeWidgetService {
     required String title,
     required bool running,
     required int remainingSeconds,
-    
   }) async {
     try {
       await _channel.invokeMethod<void>('updateCountdownWidget', {
         'title': title,
         'running': running,
         'remainingSeconds': remainingSeconds,
-        
       });
     } on PlatformException {
       // Widgets are an Android-only enhancement; the app remains usable.
@@ -28,16 +26,12 @@ class HomeWidgetService {
 
   static Future<void> updateActivity({
     required String title,
-    
-    
     bool running = true,
     int elapsedSeconds = 0,
   }) async {
     try {
       await _channel.invokeMethod<void>('updateActivityWidget', {
         'title': title,
-        
-        
         'running': running,
         'elapsedSeconds': elapsedSeconds,
       });
