@@ -441,6 +441,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ),
             ),
+            // Compact elapsed timer for this activity, adjacent to its name.
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 6, end: 4),
+              child: Text(
+                TimeFormatter.format(timer.currentElapsed.inSeconds),
+                textDirection: TextDirection.ltr,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  fontWeight: FontWeight.w700,
+                  color: timer.running ? _pageColor : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
             IconButton(
               tooltip: 'شروع',
               visualDensity: VisualDensity.compact,
