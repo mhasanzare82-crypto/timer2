@@ -22,7 +22,6 @@ class MainActivity : FlutterActivity() {
                             .putString("countdown_title", values["title"] as? String ?: "")
                             .putBoolean("countdown_running", values["running"] as? Boolean ?: false)
                             .putInt("countdown_remaining", (values["remainingSeconds"] as? Number)?.toInt() ?: 0)
-                            .putInt("countdown_remaining", (values["remainingSeconds"] as? Number)?.toInt() ?: 0)
                             .apply()
                         TimerCountdownWidgetProvider.updateAll(this)
                         result.success(null)
