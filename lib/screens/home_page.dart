@@ -417,76 +417,60 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _timerCard(_ActivityTimer timer, ThemeData theme) {
-    final elapsed = timer.currentElapsed.inSeconds;
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       color: _pageColor.withOpacity(0.06),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: _pageColor.withOpacity(0.3)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        child: Row(
           children: [
-            TextField(
-              controller: timer.controller,
-              onChanged: (_) {
-                setState(() {});
-                _persistTimers();
-              },
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: 'نام فعالیت',
-                hintText: 'نام فعالیت',
-                prefixIcon: Icon(Icons.edit_note),
-                border: OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: IconButton(
-                  tooltip: 'ذخیره نام فعالیت',
-                  icon: Icon(Icons.save_outlined, color: _pageColor),
-                  onPressed: () => _saveActivityName(timer),
+            Expanded(
+              child: TextField(
+                controller: timer.controller,
+                onChanged: (_) {
+                  setState(() {});
+                  _persistTimers();
+                },
+                onSubmitted: (_) => _saveActivityName(timer),
+                textInputAction: TextInputAction.done,
+                style: theme.textTheme.bodyMedium,
+                decoration: const InputDecoration(
+                  hintText: 'نام فعالیت',
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                timer.running ? 'در حال اجرا' : (timer.elapsed > Duration.zero ? 'مکث' : 'آماده'),
-                style: TextStyle(
-                  color: timer.running ? _pageColor : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            IconButton(
+              tooltip: 'شروع',
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              padding: EdgeInsets.zero,
+              onPressed: timer.running ? null : () => _start(timer),
+              icon: Icon(Icons.play_arrow, color: _pageColor, size: 21),
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                FilledButton.tonalIcon(
-                  style: FilledButton.styleFrom(foregroundColor: _pageColor),
-                  onPressed: timer.running ? null : () => _start(timer),
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('شروع'),
-                ),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(foregroundColor: _pageColor),
-                  onPressed: timer.running ? () => _pause(timer) : null,
-                  icon: const Icon(Icons.pause),
-                  label: const Text('مکث'),
-                ),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: _pageColor, foregroundColor: Colors.white),
-                  onPressed: timer.startedAt != null || timer.elapsed > Duration.zero
-                      ? () => _stop(timer)
-                      : null,
-                  icon: const Icon(Icons.stop),
-                  label: const Text('توقف و ثبت'),
-                ),
-              ],
+            IconButton(
+              tooltip: 'مکث',
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              padding: EdgeInsets.zero,
+              onPressed: timer.running ? () => _pause(timer) : null,
+              icon: Icon(Icons.pause, color: _pageColor, size: 20),
+            ),
+            IconButton(
+              tooltip: 'توقف و ثبت',
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              padding: EdgeInsets.zero,
+              onPressed: timer.startedAt != null || timer.elapsed > Duration.zero
+                  ? () => _stop(timer)
+                  : null,
+              icon: const Icon(Icons.stop, color: Colors.redAccent, size: 21),
             ),
           ],
         ),
@@ -587,77 +571,44 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           fontFeatures: const [],
                         ),
                       ),
+                      if (_timers.isNotEmpty) ...[
+                        const Divider(height: 22),
+                        ..._timers.map((timer) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  timer.controller.text.trim().isEmpty
+                                      ? 'فعالیت بدون نام'
+                                      : timer.controller.text.trim(),
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: _pageColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                TimeFormatter.clock(timer.currentElapsed.inSeconds),
+                                textDirection: TextDirection.ltr,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  color: _pageColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontFeatures: const [],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                      ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    'زمان‌سنج فعالیت‌ها',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: _pageColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (_timers.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: _pageColor.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _pageColor.withOpacity(0.22)),
-                    ),
-                    child: const Text(
-                      'هنوز زمان‌سنجی فعال نیست؛ یک فعالیت اضافه کنید.',
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                else
-                  ..._timers.map((timer) => Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: _pageColor.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _pageColor.withOpacity(0.35)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          timer.controller.text.trim().isEmpty
-                              ? 'فعالیت بدون نام'
-                              : timer.controller.text.trim(),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: _pageColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          TimeFormatter.clock(timer.currentElapsed.inSeconds),
-                          textDirection: TextDirection.ltr,
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: _pageColor,
-                            fontFeatures: const [],
-                          ),
-                        ),
-                        Text(
-                          timer.running ? 'در حال شمارش' : (timer.elapsed > Duration.zero ? 'متوقف موقت' : 'آماده شروع'),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-                const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text('مدیریت فعالیت‌ها', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: _pageColor)),
