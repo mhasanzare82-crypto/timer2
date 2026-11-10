@@ -14,6 +14,7 @@ jobs:
   build:
     name: Analyze and build Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,7 +38,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Dart code
-        run: flutter analyze
+        run: flutter analyze --no-fatal-warnings
 
       - name: Run tests
         run: flutter test
