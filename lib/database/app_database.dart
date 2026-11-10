@@ -42,7 +42,7 @@ class AppDatabase {
           CREATE TABLE activity_definitions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            createdAt INTEGER NOT NULL
+            createdAt TEXT NOT NULL
           )
         ''');
 
