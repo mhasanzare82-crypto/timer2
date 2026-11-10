@@ -9,7 +9,7 @@ class ActivitiesPage extends StatefulWidget {
   const ActivitiesPage({super.key});
 
   @override
-  State<ActivitiesPage> createState() => _ActivitiesPageState();
+  State<ActivitiesPage> createState() => ActivitiesPageState();
 }
 
 class ActivitiesPageState extends State<ActivitiesPage> {
@@ -117,84 +117,109 @@ class ActivitiesPageState extends State<ActivitiesPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null
-              ? Center(child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(_loadError!, textAlign: TextAlign.center),
-                ))
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-              children: [
-                Text('فعالیت‌ها', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                if (_activities.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text('هنوز فعالیتی تعریف نشده است.'),
-                  )
-                else
-                  ..._activities.map((name) => FutureBuilder<List<TimeRecord>>(
-                    future: AppDatabase.instance.getRecordsForActivity(name),
-                    builder: (context, snapshot) {
-                      final records = snapshot.data ?? const <TimeRecord>[];
-                      final total = records.fold<int>(0, (sum, record) => sum + record.durationSeconds);
-                      return Card(
-                        child: ListTile(
-                          title: Text(name),
-                          subtitle: snapshot.connectionState == ConnectionState.waiting
-                              ? const Text('در حال محاسبه زمان...')
-                              : Text('${records.length} نوبت • مجموع ${TimeFormatter.format(total)}'),
-                          trailing: const Icon(Icons.chevron_left),
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => ActivityDetailPage(title: name)),
-                            );
-                            if (mounted) await _load();
-                          },
-                        ),
-                      );
-                    },
-                  )),
-                const SizedBox(height: 20),
-                Text('سوابق ثبت‌شده', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                if (_records.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text('هنوز هیچ نوبت فعالیتی ثبت نشده است.'),
-                  )
-                else
-                  ..._records.map((record) => Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(record.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(_loadError!, textAlign: TextAlign.center),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                  children: [
+                    Text('فعالیت‌ها',
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    if (_activities.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text('هنوز فعالیتی تعریف نشده است.'),
+                      )
+                    else
+                      ..._activities.map((name) => FutureBuilder<List<TimeRecord>>(
+                            future: AppDatabase.instance.getRecordsForActivity(name),
+                            builder: (context, snapshot) {
+                              final records = snapshot.data ?? const <TimeRecord>[];
+                              final total = records.fold<int>(
+                                0,
+                                (sum, record) => sum + record.durationSeconds,
+                              );
+                              return Card(
+                                child: ListTile(
+                                  title: Text(name),
+                                  subtitle: snapshot.connectionState ==
+                                          ConnectionState.waiting
+                                      ? const Text('در حال محاسبه زمان...')
+                                      : Text(
+                                          '${records.length} نوبت • مجموع ${TimeFormatter.format(total)}'),
+                                  trailing: const Icon(Icons.chevron_left),
+                                  onTap: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ActivityDetailPage(title: name),
+                                      ),
+                                    );
+                                    if (mounted) await _load();
+                                  },
+                                ),
+                              );
+                            },
+                          )),
+                    const SizedBox(height: 20),
+                    Text('سوابق ثبت‌شده',
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    if (_records.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text('هنوز هیچ نوبت فعالیتی ثبت نشده است.'),
+                      )
+                    else
+                      ..._records.map((record) => Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          record.title,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        TimeFormatter.format(
+                                            record.durationSeconds),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text('تاریخ: ${_date(record.activityDate)}'),
+                                  Text(
+                                      'شروع: ${_time(record.activityDate)}  •  پایان: ${_time(record.createdAt)}'),
+                                  Text('دسته‌بندی: ${record.category}'),
+                                  if (record.note != null &&
+                                      record.note!.trim().isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(record.note!,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall),
+                                  ],
+                                ],
                               ),
-                              Text(
-                                TimeFormatter.format(record.durationSeconds),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text('تاریخ: ${_date(record.activityDate)}'),
-                          Text('شروع: ${_time(record.activityDate)}  •  پایان: ${_time(record.createdAt)}'),
-                          Text('دسته‌بندی: ${record.category}'),
-                          if (record.note != null && record.note!.trim().isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(record.note!, style: Theme.of(context).textTheme.bodySmall),
-                          ],
-                        ],
-                      ),
-                    ),
-                  )),
-              ],
-            ),
+                            ),
+                          )),
+                  ],
+                ),
     );
   }
 }
@@ -245,12 +270,14 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         if (parts.length == 2) {
           final date = parts[0].split('/').map(int.tryParse).toList();
           final clock = parts[1].split(':').map(int.tryParse).toList();
-          if (date.length == 3 && clock.length >= 2 &&
+          if (date.length == 3 &&
+              clock.length >= 2 &&
               date.every((e) => e != null) &&
               clock.take(2).every((e) => e != null)) {
             try {
               final g = Jalali(date[0]!, date[1]!, date[2]!).toDateTime();
-              return DateTime(g.year, g.month, g.day, clock[0]!, clock[1]!);
+              return DateTime(
+                  g.year, g.month, g.day, clock[0]!, clock[1]!);
             } catch (_) {}
           }
         }
@@ -266,7 +293,8 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _records.isEmpty
-              ? const Center(child: Text('هنوز زمانی برای این فعالیت ثبت نشده است.'))
+              ? const Center(
+                  child: Text('هنوز زمانی برای این فعالیت ثبت نشده است.'))
               : ListView.separated(
                   padding: const EdgeInsets.all(12),
                   itemCount: _records.length,
@@ -282,10 +310,23 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.calendar_month_outlined, size: 19),
+                                const Icon(Icons.calendar_month_outlined,
+                                    size: 19),
                                 const SizedBox(width: 8),
-                                Expanded(child: Text(_date(record.activityDate), style: const TextStyle(fontWeight: FontWeight.w600))),
-                                Text(TimeFormatter.format(record.durationSeconds), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                Expanded(
+                                  child: Text(
+                                    _date(record.activityDate),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                Text(
+                                  TimeFormatter.format(
+                                      record.durationSeconds),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 10),
@@ -293,7 +334,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                               children: [
                                 const Icon(Icons.play_arrow, size: 18),
                                 const SizedBox(width: 6),
-                                Expanded(child: Text('شروع: ${_time(record.activityDate)}')),
+                                Expanded(
+                                    child: Text(
+                                        'شروع: ${_time(record.activityDate)}')),
                                 const Icon(Icons.stop, size: 18),
                                 const SizedBox(width: 6),
                                 Text('پایان: ${_time(end)}'),
@@ -301,9 +344,11 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                             ),
                             const SizedBox(height: 8),
                             Text('دسته‌بندی: ${record.category}'),
-                            if (record.note != null && record.note!.trim().isNotEmpty) ...[
+                            if (record.note != null &&
+                                record.note!.trim().isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              Text(record.note!, style: Theme.of(context).textTheme.bodySmall),
+                              Text(record.note!,
+                                  style: Theme.of(context).textTheme.bodySmall),
                             ],
                           ],
                         ),
