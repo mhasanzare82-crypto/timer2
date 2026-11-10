@@ -15,6 +15,7 @@ class ActivitiesPage extends StatefulWidget {
 class _ActivitiesPageState extends State<ActivitiesPage> {
   List<String> _activities = [];
   bool _loading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -23,12 +24,21 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
   }
 
   Future<void> _load() async {
-    final values = await AppDatabase.instance.getActivityNames();
-    if (!mounted) return;
-    setState(() {
-      _activities = values;
-      _loading = false;
-    });
+    try {
+      final values = await AppDatabase.instance.getActivityNames();
+      if (!mounted) return;
+      setState(() {
+        _activities = values;
+        _loadError = null;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = 'بارگذاری فعالیت‌ها ناموفق بود: $error';
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _add() async {
@@ -61,8 +71,21 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
     );
     controller.dispose();
     if (name == null || name.trim().isEmpty) return;
-    await AppDatabase.instance.addActivity(name);
-    await _load();
+    try {
+      await AppDatabase.instance.addActivity(name);
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('فعالیت ذخیره شد.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ذخیره فعالیت ناموفق بود: $error')),
+        );
+      }
+    }
   }
 
   @override
@@ -76,6 +99,11 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _loadError != null
+              ? Center(child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(_loadError!, textAlign: TextAlign.center),
+                ))
           : _activities.isEmpty
               ? const Center(child: Text('هنوز فعالیتی تعریف نشده است.'))
               : ListView.separated(
