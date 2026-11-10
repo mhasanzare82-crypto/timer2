@@ -14,6 +14,7 @@ class ActivitiesPage extends StatefulWidget {
 
 class _ActivitiesPageState extends State<ActivitiesPage> {
   List<String> _activities = [];
+  List<TimeRecord> _records = [];
   bool _loading = true;
   String? _loadError;
 
@@ -25,10 +26,16 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
 
   Future<void> _load() async {
     try {
-      final values = await AppDatabase.instance.getActivityNames();
+      final results = await Future.wait([
+        AppDatabase.instance.getActivityNames(),
+        AppDatabase.instance.getAllRecords(),
+      ]);
+      final values = results[0] as List<String>;
+      final records = results[1] as List<TimeRecord>;
       if (!mounted) return;
       setState(() {
         _activities = values;
+        _records = records;
         _loadError = null;
         _loading = false;
       });
@@ -40,6 +47,14 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
       });
     }
   }
+
+  String _date(DateTime value) {
+    final j = Jalali.fromDateTime(value);
+    return '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}';
+  }
+
+  String _time(DateTime value) =>
+      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
 
   Future<void> _add() async {
     final controller = TextEditingController();
@@ -104,43 +119,80 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                   padding: const EdgeInsets.all(24),
                   child: Text(_loadError!, textAlign: TextAlign.center),
                 ))
-          : _activities.isEmpty
-              ? const Center(child: Text('هنوز فعالیتی تعریف نشده است.'))
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                  itemCount: _activities.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final name = _activities[index];
-                    return FutureBuilder<List<TimeRecord>>(
-                      future: AppDatabase.instance.getRecordsForActivity(name),
-                      builder: (context, snapshot) {
-                        final records = snapshot.data ?? const <TimeRecord>[];
-                        final total = records.fold<int>(
-                          0, (sum, record) => sum + record.durationSeconds,
-                        );
-                        return Card(
-                          child: ListTile(
-                            title: Text(name),
-                            subtitle: snapshot.connectionState == ConnectionState.waiting
-                                ? const Text('در حال محاسبه زمان...')
-                                : Text('${records.length} نوبت • مجموع ${TimeFormatter.format(total)}'),
-                            trailing: const Icon(Icons.chevron_left),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ActivityDetailPage(title: name),
-                                ),
-                              );
-                              if (mounted) await _load();
-                            },
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+              children: [
+                Text('فعالیت‌ها', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                if (_activities.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text('هنوز فعالیتی تعریف نشده است.'),
+                  )
+                else
+                  ..._activities.map((name) => FutureBuilder<List<TimeRecord>>(
+                    future: AppDatabase.instance.getRecordsForActivity(name),
+                    builder: (context, snapshot) {
+                      final records = snapshot.data ?? const <TimeRecord>[];
+                      final total = records.fold<int>(0, (sum, record) => sum + record.durationSeconds);
+                      return Card(
+                        child: ListTile(
+                          title: Text(name),
+                          subtitle: snapshot.connectionState == ConnectionState.waiting
+                              ? const Text('در حال محاسبه زمان...')
+                              : Text('${records.length} نوبت • مجموع ${TimeFormatter.format(total)}'),
+                          trailing: const Icon(Icons.chevron_left),
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => ActivityDetailPage(title: name)),
+                            );
+                            if (mounted) await _load();
+                          },
+                        ),
+                      );
+                    },
+                  )),
+                const SizedBox(height: 20),
+                Text('سوابق ثبت‌شده', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                if (_records.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text('هنوز هیچ نوبت فعالیتی ثبت نشده است.'),
+                  )
+                else
+                  ..._records.map((record) => Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(record.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              ),
+                              Text(
+                                TimeFormatter.format(record.durationSeconds),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                          const SizedBox(height: 8),
+                          Text('تاریخ: ${_date(record.activityDate)}'),
+                          Text('شروع: ${_time(record.activityDate)}  •  پایان: ${_time(record.createdAt)}'),
+                          Text('دسته‌بندی: ${record.category}'),
+                          if (record.note != null && record.note!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(record.note!, style: Theme.of(context).textTheme.bodySmall),
+                          ],
+                        ],
+                      ),
+                    ),
+                  )),
+              ],
+            ),
     );
   }
 }
