@@ -28,15 +28,12 @@ class TimerCountdownWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_countdown_timer)
             val title = prefs.getString("countdown_title", "").orEmpty()
             val running = prefs.getBoolean("countdown_running", false)
-            val endTime = prefs.getLong("countdown_end_time", 0L)
             val savedRemaining = prefs.getInt("countdown_remaining", 0)
-            val remaining = if (running && endTime > 0L) {
-                ((endTime - System.currentTimeMillis()).coerceAtLeast(0L) / 1000L).toInt()
-            } else savedRemaining
+            val remaining = savedRemaining
 
             views.setTextViewText(R.id.countdown_widget_title, title.ifBlank { "تایمر معکوس" })
-            if (running && remaining > 0 && endTime > 0L && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val base = SystemClock.elapsedRealtime() + (endTime - System.currentTimeMillis()).coerceAtLeast(0L)
+            if (running && remaining > 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                val base = SystemClock.elapsedRealtime() + remaining * 1000L
                 views.setChronometer(R.id.countdown_widget_clock, base, "%s", true)
                 views.setChronometerCountDown(R.id.countdown_widget_clock, true)
                 views.setViewVisibility(R.id.countdown_widget_clock, View.VISIBLE)
