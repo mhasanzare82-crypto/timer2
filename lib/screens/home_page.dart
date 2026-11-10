@@ -430,49 +430,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TextField(
-                    controller: timer.controller,
-                    onChanged: (_) {
-                      setState(() {});
-                      _persistTimers();
-                    },
-                    textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
-                      labelText: 'نام فعالیت',
-                      hintText: 'نام فعالیت',
-                      prefixIcon: Icon(Icons.edit_note),
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      suffixIcon: IconButton(
-                        tooltip: 'ذخیره نام فعالیت',
-                        icon: Icon(Icons.save_outlined, color: _pageColor),
-                        onPressed: () => _saveActivityName(timer),
-                      ),
-                    ),
-                  ),
+            TextField(
+              controller: timer.controller,
+              onChanged: (_) {
+                setState(() {});
+                _persistTimers();
+              },
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                labelText: 'نام فعالیت',
+                hintText: 'نام فعالیت',
+                prefixIcon: Icon(Icons.edit_note),
+                border: OutlineInputBorder(),
+                isDense: true,
+                suffixIcon: IconButton(
+                  tooltip: 'ذخیره نام فعالیت',
+                  icon: Icon(Icons.save_outlined, color: _pageColor),
+                  onPressed: () => _saveActivityName(timer),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.center,
-                    child: Text(
-                      TimeFormatter.clock(elapsed),
-                      textDirection: TextDirection.ltr,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _pageColor,
-                        fontFeatures: const [],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 10),
             Align(
@@ -618,7 +594,74 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 const SizedBox(height: 16),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: Text('تایمرهای فعالیت', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: _pageColor)),
+                  child: Text(
+                    'زمان‌سنج فعالیت‌ها',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: _pageColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (_timers.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: _pageColor.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _pageColor.withOpacity(0.22)),
+                    ),
+                    child: const Text(
+                      'هنوز زمان‌سنجی فعال نیست؛ یک فعالیت اضافه کنید.',
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                else
+                  ..._timers.map((timer) => Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: _pageColor.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _pageColor.withOpacity(0.35)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          timer.controller.text.trim().isEmpty
+                              ? 'فعالیت بدون نام'
+                              : timer.controller.text.trim(),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: _pageColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          TimeFormatter.clock(timer.currentElapsed.inSeconds),
+                          textDirection: TextDirection.ltr,
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: _pageColor,
+                            fontFeatures: const [],
+                          ),
+                        ),
+                        Text(
+                          timer.running ? 'در حال شمارش' : (timer.elapsed > Duration.zero ? 'متوقف موقت' : 'آماده شروع'),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text('مدیریت فعالیت‌ها', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: _pageColor)),
                 ),
                 const SizedBox(height: 8),
                 if (_timers.isEmpty)
