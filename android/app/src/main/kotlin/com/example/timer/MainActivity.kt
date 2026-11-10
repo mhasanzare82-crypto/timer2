@@ -22,7 +22,7 @@ class MainActivity : FlutterActivity() {
                             .putString("countdown_title", values["title"] as? String ?: "")
                             .putBoolean("countdown_running", values["running"] as? Boolean ?: false)
                             .putInt("countdown_remaining", (values["remainingSeconds"] as? Number)?.toInt() ?: 0)
-                            .putLong("countdown_end_time", (values["endTime"] as? Number)?.toLong() ?: 0L)
+                            .putInt("countdown_remaining", (values["remainingSeconds"] as? Number)?.toInt() ?: 0)
                             .apply()
                         TimerCountdownWidgetProvider.updateAll(this)
                         result.success(null)
@@ -35,8 +35,7 @@ class MainActivity : FlutterActivity() {
                         }
                         preferences.edit()
                             .putString("activity_title", values["title"] as? String ?: "")
-                            .putLong("activity_start_time", (values["startTime"] as? Number)?.toLong() ?: 0L)
-                            .putLong("activity_end_time", (values["endTime"] as? Number)?.toLong() ?: 0L)
+                            
                             .putBoolean("activity_running", values["running"] as? Boolean ?: false)
                             .putInt("activity_elapsed", (values["elapsedSeconds"] as? Number)?.toInt() ?: 0)
                             .apply()
