@@ -1,3 +1,4 @@
+import '../utils/jalali_date_storage.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -18,7 +19,7 @@ class AppDatabase {
 
     _database = await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE time_records (
@@ -61,6 +62,37 @@ class AppDatabase {
               createdAt INTEGER NOT NULL
             )
           ''');
+        }
+        if (oldVersion < 5) {
+          // Convert legacy epoch-millisecond values to Jalali date strings.
+          final records = await db.query('time_records');
+          for (final row in records) {
+            final id = row['id'];
+            await db.update('time_records', {
+              'createdAt': JalaliDateStorage.encode(
+                JalaliDateStorage.decode(row['createdAt']),
+              ),
+              'activityDate': JalaliDateStorage.encode(
+                JalaliDateStorage.decode(row['activityDate']),
+              ),
+            }, where: 'id = ?', whereArgs: [id]);
+          }
+          final definitions = await db.query('activity_definitions');
+          for (final row in definitions) {
+            await db.update('activity_definitions', {
+              'createdAt': JalaliDateStorage.encode(
+                JalaliDateStorage.decode(row['createdAt']),
+              ),
+            }, where: 'id = ?', whereArgs: [row['id']]);
+          }
+          final states = await db.query('app_state');
+          for (final row in states) {
+            final key = row['stateKey'] as String;
+            final value = row['stateValue'] as String;
+            await db.update('app_state', {
+              'stateValue': JalaliDateStorage.normalizeStateJson(key, value),
+            }, where: 'stateKey = ?', whereArgs: [key]);
+          }
         }
         if (oldVersion < 2) {
           await db.execute('''
@@ -143,7 +175,7 @@ class AppDatabase {
         'activity_definitions',
         {
           'name': title,
-          'createdAt': DateTime.now().millisecondsSinceEpoch,
+          'createdAt': JalaliDateStorage.encode(DateTime.now()),
         },
         conflictAlgorithm: ConflictAlgorithm.ignore,
       );
@@ -201,12 +233,12 @@ class AppDatabase {
 
     if (start != null) {
       conditions.add('activityDate >= ?');
-      args.add(start.millisecondsSinceEpoch);
+      args.add(JalaliDateStorage.encode(start));
     }
 
     if (end != null) {
       conditions.add('activityDate < ?');
-      args.add(end.millisecondsSinceEpoch);
+      args.add(JalaliDateStorage.encode(end));
     }
 
     if (category != null && category.isNotEmpty) {
@@ -229,7 +261,7 @@ class AppDatabase {
     final db = await database;
     return db.insert(
       'activity_definitions',
-      {'name': name.trim(), 'createdAt': DateTime.now().millisecondsSinceEpoch},
+      {'name': name.trim(), 'createdAt': JalaliDateStorage.encode(DateTime.now())},
       conflictAlgorithm: ConflictAlgorithm.ignore,
     );
   }
