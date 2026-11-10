@@ -404,60 +404,64 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final elapsed = timer.currentElapsed.inSeconds;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: _pageColor.withOpacity(0.045),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: _pageColor.withOpacity(0.22))),
+      color: _pageColor.withOpacity(0.06),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: _pageColor.withOpacity(0.3)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            TextField(
-              controller: timer.controller,
-              onChanged: (_) => _persistTimers(),
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: 'نام فعالیت',
-                hintText: 'نام فعالیت را وارد کنید (اختیاری تا زمان توقف)',
-                prefixIcon: const Icon(Icons.edit_note),
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: IconButton(
-                  tooltip: 'انتخاب از فعالیت‌ها',
-                  onPressed: () => _chooseActivity(timer),
-                  icon: const Icon(Icons.arrow_drop_down_circle_outlined),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    TimeFormatter.clock(elapsed),
-                    textDirection: TextDirection.ltr,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: _pageColor,
-                      fontFeatures: const [],
+                  flex: 3,
+                  child: TextField(
+                    controller: timer.controller,
+                    onChanged: (_) {
+                      setState(() {});
+                      _persistTimers();
+                    },
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      labelText: 'نام فعالیت',
+                      hintText: 'نام فعالیت',
+                      prefixIcon: Icon(Icons.edit_note),
+                      border: OutlineInputBorder(),
+                      isDense: true,
                     ),
                   ),
                 ),
-                if (timer.controller.text.trim().isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Flexible(child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: _pageColor.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
-                    child: Text(timer.controller.text.trim(), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _pageColor, fontWeight: FontWeight.w600)),
-                  )),
-                ],
-                const SizedBox(width: 8),
-                Text(
-                  timer.running ? 'در حال اجرا' : (timer.startedAt != null || timer.elapsed > Duration.zero ? 'مکث' : 'آماده'),
-                  style: TextStyle(
-                    color: timer.running ? _pageColor : theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: Text(
+                      TimeFormatter.clock(elapsed),
+                      textDirection: TextDirection.ltr,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: _pageColor,
+                        fontFeatures: const [],
+                      ),
+                    ),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                timer.running ? 'در حال اجرا' : (timer.elapsed > Duration.zero ? 'مکث' : 'آماده'),
+                style: TextStyle(
+                  color: timer.running ? _pageColor : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -472,12 +476,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   label: const Text('شروع'),
                 ),
                 OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(foregroundColor: _pageColor),
                   onPressed: timer.running ? () => _pause(timer) : null,
                   icon: const Icon(Icons.pause),
                   label: const Text('مکث'),
                 ),
                 FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: _pageColor),
+                  style: FilledButton.styleFrom(backgroundColor: _pageColor, foregroundColor: Colors.white),
                   onPressed: timer.startedAt != null || timer.elapsed > Duration.zero
                       ? () => _stop(timer)
                       : null,
@@ -496,30 +501,63 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Scaffold(
+    final pageScheme = scheme.copyWith(
+      primary: _pageColor,
+      secondary: _pageColor,
+      tertiary: _pageColor,
+      surfaceTint: _pageColor,
+    );
+    final pageTheme = theme.copyWith(
+      colorScheme: pageScheme,
+      appBarTheme: theme.appBarTheme.copyWith(
+        backgroundColor: _pageColor.withOpacity(0.10),
+        foregroundColor: _pageColor,
+        iconTheme: IconThemeData(color: _pageColor),
+        titleTextStyle: theme.textTheme.titleLarge?.copyWith(color: _pageColor, fontWeight: FontWeight.bold),
+      ),
+      inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _pageColor, width: 2)),
+        floatingLabelStyle: TextStyle(color: _pageColor),
+        prefixIconColor: _pageColor,
+      ),
+      cardTheme: theme.cardTheme.copyWith(
+        color: _pageColor.withOpacity(0.045),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: _pageColor.withOpacity(0.22))),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: _pageColor),
+    );
+    return Theme(
+      data: pageTheme,
+      child: Scaffold(
+      backgroundColor: _pageColor.withOpacity(0.025),
       appBar: AppBar(
         title: const Text('ثبت زمان'),
         centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: _openActivities,
-            icon: const Icon(Icons.list_alt),
-            tooltip: 'فعالیت‌ها',
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Center(
+              child: SegmentedButton<bool>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment<bool>(value: true, label: Text('پیوسته')),
+                  ButtonSegment<bool>(value: false, label: Text('ناپیوسته')),
+                ],
+                selected: {_continuous},
+                onSelectionChanged: (values) => _setContinuous(values.first),
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  textStyle: const WidgetStatePropertyAll(TextStyle(fontSize: 12)),
+                  foregroundColor: WidgetStatePropertyAll(_pageColor),
+                  side: WidgetStatePropertyAll(BorderSide(color: _pageColor.withOpacity(0.45))),
+                ),
+              ),
+            ),
           ),
           IconButton(
-            onPressed: _openReminders,
-            icon: const Icon(Icons.notifications_active_outlined),
-            tooltip: 'آلارم و یادآور',
-          ),
-          IconButton(
-            onPressed: _openReports,
-            icon: const Icon(Icons.bar_chart),
-            tooltip: 'گزارش‌ها',
-          ),
-          IconButton(
-            onPressed: _openTimer,
-            icon: const Icon(Icons.hourglass_bottom),
-            tooltip: 'تایمر معکوس',
+            onPressed: _showColorSettings,
+            icon: Icon(Icons.palette_outlined, color: _pageColor),
+            tooltip: 'تنظیم رنگ صفحه',
           ),
         ],
       ),
@@ -528,30 +566,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Row(
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: _showColorSettings,
-                      icon: Icon(Icons.palette_outlined, color: _pageColor),
-                      label: const Text('تنظیم رنگ'),
-                      style: OutlinedButton.styleFrom(foregroundColor: _pageColor),
-                    ),
-                    const Spacer(),
-                    SegmentedButton<bool>(
-                      segments: const [
-                        ButtonSegment<bool>(value: true, label: Text('پیوسته')),
-                        ButtonSegment<bool>(value: false, label: Text('ناپیوسته')),
-                      ],
-                      selected: {_continuous},
-                      onSelectionChanged: (values) => _setContinuous(values.first),
-                      style: ButtonStyle(
-                        foregroundColor: WidgetStatePropertyAll(_pageColor),
-                        side: WidgetStatePropertyAll(BorderSide(color: _pageColor.withOpacity(0.45))),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
@@ -602,6 +616,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ..._timers.map((timer) => _timerCard(timer, theme)),
               ],
             ),
+      ),
     );
   }
 }
