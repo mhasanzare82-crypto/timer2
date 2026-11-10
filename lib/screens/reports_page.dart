@@ -158,7 +158,8 @@ class _ReportsPageState extends State<ReportsPage> {
     try {
       final payload = {
         'format': 'timer2-backup',
-        'version': 1,
+        'version': 2,
+        'dateFormat': 'jalali-yyyy/MM/dd HH:mm:ss.SSS',
         'exportedAt': JalaliDateStorage.encode(DateTime.now()),
         'records': _records.map((e) => e.toMap()).toList(),
         'activities': _activities,
@@ -194,7 +195,8 @@ class _ReportsPageState extends State<ReportsPage> {
       final file = backupFiles.isEmpty ? null : backupFiles.first;
       if (file == null) throw const FormatException('فایل پشتیبان معتبر نیست.');
       final data = jsonDecode(utf8.decode(file.content as List<int>)) as Map<String, dynamic>;
-      if (data['format'] != 'timer2-backup' || data['version'] != 1) {
+      if (data['format'] != 'timer2-backup' ||
+          (data['version'] != 1 && data['version'] != 2)) {
         throw const FormatException('نسخه فایل پشتیبان پشتیبانی نمی‌شود.');
       }
       final records = (data['records'] as List<dynamic>).map((e) {
