@@ -164,6 +164,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     await AppDatabase.instance.saveAppState('continuous_activity_mode', value.toString());
   }
 
+  Future<void> _saveActivityName(_ActivityTimer timer) async {
+    final name = timer.controller.text.trim();
+    if (name.isEmpty) {
+      _message('ابتدا نام فعالیت را وارد کنید.');
+      return;
+    }
+    try {
+      await AppDatabase.instance.addActivity(name);
+      await _persistTimers();
+      await _loadActivityNames();
+      if (mounted) _message('نام فعالیت «$name» ذخیره شد.');
+    } catch (_) {
+      _message('ذخیره نام فعالیت ناموفق بود.');
+    }
+  }
+
   Future<void> _loadActivityNames() async {
     try {
       final names = await AppDatabase.instance.getActivityNames();
@@ -356,6 +372,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
 
     try {
+      await AppDatabase.instance.addActivity(title);
       await AppDatabase.instance.insertRecord(record);
       setState(() {
         _timers.remove(timer);
@@ -430,6 +447,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       prefixIcon: Icon(Icons.edit_note),
                       border: OutlineInputBorder(),
                       isDense: true,
+                      suffixIcon: IconButton(
+                        tooltip: 'ذخیره نام فعالیت',
+                        icon: Icon(Icons.save_outlined, color: _pageColor),
+                        onPressed: () => _saveActivityName(timer),
+                      ),
                     ),
                   ),
                 ),
@@ -594,16 +616,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  height: 52,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: _pageColor, foregroundColor: Colors.white),
-                    onPressed: _addTimer,
-                    icon: const Icon(Icons.add),
-                    label: const Text('افزودن فعالیت'),
-                  ),
-                ),
-                const SizedBox(height: 14),
                 if (_timers.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
@@ -614,6 +626,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   )
                 else
                   ..._timers.map((timer) => _timerCard(timer, theme)),
+                const SizedBox(height: 4),
+                SizedBox(
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: _pageColor, foregroundColor: Colors.white),
+                    onPressed: _addTimer,
+                    icon: const Icon(Icons.add),
+                    label: const Text('افزودن فعالیت'),
+                  ),
+                ),
               ],
             ),
       ),
