@@ -126,12 +126,15 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                 ? const Text('در حال محاسبه زمان...')
                                 : Text('${records.length} نوبت • مجموع ${TimeFormatter.format(total)}'),
                             trailing: const Icon(Icons.chevron_left),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ActivityDetailPage(title: name),
-                              ),
-                            ),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ActivityDetailPage(title: name),
+                                ),
+                              );
+                              if (mounted) await _load();
+                            },
                           ),
                         );
                       },
@@ -218,25 +221,37 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                     final record = _records[index];
                     final end = _endTime(record);
                     return Card(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 16),
-                          child: Row(
-                            children: [
-                              Text('${_date(record.activityDate)} ${_time(record.activityDate)}'),
-                              const SizedBox(width: 12),
-                              const Text('←'),
-                              const SizedBox(width: 12),
-                              Text('${_date(end)} ${_time(end)}'),
-                              const SizedBox(width: 12),
-                              const Text('←'),
-                              const SizedBox(width: 12),
-                              Text(TimeFormatter.format(record.durationSeconds),
-                                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.calendar_month_outlined, size: 19),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(_date(record.activityDate), style: const TextStyle(fontWeight: FontWeight.w600))),
+                                Text(TimeFormatter.format(record.durationSeconds), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                const Icon(Icons.play_arrow, size: 18),
+                                const SizedBox(width: 6),
+                                Expanded(child: Text('شروع: ${_time(record.activityDate)}')),
+                                const Icon(Icons.stop, size: 18),
+                                const SizedBox(width: 6),
+                                Text('پایان: ${_time(end)}'),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text('دسته‌بندی: ${record.category}'),
+                            if (record.note != null && record.note!.trim().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(record.note!, style: Theme.of(context).textTheme.bodySmall),
                             ],
-                          ),
+                          ],
                         ),
                       ),
                     );
