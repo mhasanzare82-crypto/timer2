@@ -12,7 +12,7 @@ class ActivitiesPage extends StatefulWidget {
   State<ActivitiesPage> createState() => _ActivitiesPageState();
 }
 
-class _ActivitiesPageState extends State<ActivitiesPage> {
+class ActivitiesPageState extends State<ActivitiesPage> {
   List<String> _activities = [];
   List<TimeRecord> _records = [];
   bool _loading = true;
@@ -23,6 +23,8 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
     super.initState();
     _load();
   }
+
+  Future<void> refresh() => _load();
 
   Future<void> _load() async {
     try {
