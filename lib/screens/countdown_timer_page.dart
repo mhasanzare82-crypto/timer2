@@ -146,7 +146,6 @@ class _CountdownTimerPageState extends State<CountdownTimerPage> {
         title: _titleController.text.trim(),
         running: _running,
         remainingSeconds: _remainingSeconds,
-        remainingSeconds: _remainingSeconds,
       );
 
   void _startTicker() {
