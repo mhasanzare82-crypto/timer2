@@ -570,7 +570,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest,
+                    color: _pageColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: _pageColor.withOpacity(0.35)),
                   ),
@@ -578,7 +578,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     children: [
                       Text(
                         _jalaliDate(_now),
-                        style: theme.textTheme.titleMedium,
+                        style: theme.textTheme.titleMedium?.copyWith(color: _pageColor),
                       ),
                       const SizedBox(height: 8),
                       Text(
