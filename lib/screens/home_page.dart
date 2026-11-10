@@ -441,7 +441,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       _persistTimers();
                     },
                     textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'نام فعالیت',
                       hintText: 'نام فعالیت',
                       prefixIcon: Icon(Icons.edit_note),
