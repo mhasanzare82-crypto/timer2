@@ -59,7 +59,7 @@ class AppDatabase {
             CREATE TABLE IF NOT EXISTS activity_definitions (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               name TEXT NOT NULL UNIQUE,
-              createdAt INTEGER NOT NULL
+              createdAt TEXT NOT NULL
             )
           ''');
         }
@@ -72,27 +72,53 @@ class AppDatabase {
           ''');
         }
         if (oldVersion < 5) {
-          // Convert legacy epoch-millisecond values to Jalali date strings.
-          final records = await db.query('time_records');
-          for (final row in records) {
-            final id = row['id'];
-            await db.update('time_records', {
-              'createdAt': JalaliDateStorage.encode(
-                JalaliDateStorage.decode(row['createdAt']),
-              ),
-              'activityDate': JalaliDateStorage.encode(
-                JalaliDateStorage.decode(row['activityDate']),
-              ),
-            }, where: 'id = ?', whereArgs: [id]);
+          // Rebuild date-bearing tables with TEXT columns and Jalali values.
+          final oldRecords = await db.query('time_records');
+          await db.execute('DROP TABLE time_records');
+          await db.execute('''
+            CREATE TABLE time_records (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              title TEXT NOT NULL,
+              category TEXT NOT NULL,
+              durationSeconds INTEGER NOT NULL,
+              createdAt TEXT NOT NULL,
+              activityDate TEXT NOT NULL,
+              note TEXT
+            )
+          ''');
+          await db.execute('''
+            CREATE INDEX idx_time_records_date
+            ON time_records(activityDate)
+          ''');
+          for (final row in oldRecords) {
+            await db.insert('time_records', {
+              'id': row['id'],
+              'title': row['title'],
+              'category': row['category'],
+              'durationSeconds': row['durationSeconds'],
+              'createdAt': JalaliDateStorage.encode(JalaliDateStorage.decode(row['createdAt'])),
+              'activityDate': JalaliDateStorage.encode(JalaliDateStorage.decode(row['activityDate'])),
+              'note': row['note'],
+            });
           }
-          final definitions = await db.query('activity_definitions');
-          for (final row in definitions) {
-            await db.update('activity_definitions', {
-              'createdAt': JalaliDateStorage.encode(
-                JalaliDateStorage.decode(row['createdAt']),
-              ),
-            }, where: 'id = ?', whereArgs: [row['id']]);
+
+          final oldDefinitions = await db.query('activity_definitions');
+          await db.execute('DROP TABLE activity_definitions');
+          await db.execute('''
+            CREATE TABLE activity_definitions (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT NOT NULL UNIQUE,
+              createdAt TEXT NOT NULL
+            )
+          ''');
+          for (final row in oldDefinitions) {
+            await db.insert('activity_definitions', {
+              'id': row['id'],
+              'name': row['name'],
+              'createdAt': JalaliDateStorage.encode(JalaliDateStorage.decode(row['createdAt'])),
+            });
           }
+
           final states = await db.query('app_state');
           for (final row in states) {
             final key = row['stateKey'] as String;
@@ -101,14 +127,6 @@ class AppDatabase {
               'stateValue': JalaliDateStorage.normalizeStateJson(key, value),
             }, where: 'stateKey = ?', whereArgs: [key]);
           }
-        }
-        if (oldVersion < 2) {
-          await db.execute('''
-            CREATE TABLE app_state (
-              stateKey TEXT PRIMARY KEY,
-              stateValue TEXT NOT NULL
-            )
-          ''');
         }
       },
     );
