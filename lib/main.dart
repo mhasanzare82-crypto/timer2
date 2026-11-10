@@ -53,10 +53,12 @@ class MainTabsPage extends StatefulWidget {
 
 class _MainTabsPageState extends State<MainTabsPage> {
   int _selectedIndex = 0;
+  final GlobalKey<ActivitiesPageState> _activitiesKey =
+      GlobalKey<ActivitiesPageState>();
 
-  static const _pages = <Widget>[
-    HomePage(),
-    ActivitiesPage(),
+  late final List<Widget> _pages = [
+    const HomePage(),
+    ActivitiesPage(key: _activitiesKey),
     ReportsPage(),
     CountdownTimerPage(),
   ];
@@ -90,8 +92,14 @@ class _MainTabsPageState extends State<MainTabsPage> {
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) =>
-            setState(() => _selectedIndex = index),
+        onDestinationSelected: (index) {
+          setState(() => _selectedIndex = index);
+          if (index == 1) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _activitiesKey.currentState?.refresh();
+            });
+          }
+        },
         destinations: _destinations,
       ),
     );
