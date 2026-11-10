@@ -27,8 +27,8 @@ class AppDatabase {
             title TEXT NOT NULL,
             category TEXT NOT NULL,
             durationSeconds INTEGER NOT NULL,
-            createdAt INTEGER NOT NULL,
-            activityDate INTEGER NOT NULL,
+            createdAt TEXT NOT NULL,
+            activityDate TEXT NOT NULL,
             note TEXT
           )
         ''');
@@ -60,6 +60,14 @@ class AppDatabase {
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               name TEXT NOT NULL UNIQUE,
               createdAt INTEGER NOT NULL
+            )
+          ''');
+        }
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS app_state (
+              stateKey TEXT PRIMARY KEY,
+              stateValue TEXT NOT NULL
             )
           ''');
         }
@@ -118,7 +126,7 @@ class AppDatabase {
       'app_state',
       {
         'stateKey': key,
-        'stateValue': value,
+        'stateValue': JalaliDateStorage.normalizeStateJson(key, value),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
