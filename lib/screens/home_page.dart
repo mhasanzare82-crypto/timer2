@@ -189,35 +189,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     } catch (_) {}
   }
 
-  Future<void> _chooseActivity(_ActivityTimer timer) async {
-    await _loadActivityNames();
-    if (!mounted) return;
-    if (_activityNames.isEmpty) {
-      _message('ابتدا از صفحه فعالیت‌ها یک فعالیت تعریف کنید.');
-      return;
-    }
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            const ListTile(title: Text('انتخاب فعالیت')),
-            ..._activityNames.map((name) => ListTile(
-              title: Text(name),
-              onTap: () => Navigator.pop(context, name),
-            )),
-          ],
-        ),
-      ),
-    );
-    if (selected != null) {
-      timer.controller.text = selected;
-      await _persistTimers();
-      if (mounted) setState(() {});
-    }
-  }
-
   Future<void> _restoreTimers() async {
     try {
       final saved = await AppDatabase.instance.getAppState(_stateKey);
@@ -390,26 +361,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _message('ثبت فعالیت ناموفق بود.');
       await _persistTimers();
     }
-  }
-
-  Future<void> _openTimer() async {
-    await Navigator.push(context,
-        MaterialPageRoute(builder: (_) => const CountdownTimerPage()));
-  }
-
-  Future<void> _openReminders() async {
-    await Navigator.push(context,
-        MaterialPageRoute(builder: (_) => const AlarmRemindersPage()));
-  }
-
-  Future<void> _openActivities() async {
-    await Navigator.push(context,
-        MaterialPageRoute(builder: (_) => const ActivitiesPage()));
-  }
-
-  Future<void> _openReports() async {
-    await Navigator.push(context,
-        MaterialPageRoute(builder: (_) => const ReportsPage()));
   }
 
   Widget _timerCard(_ActivityTimer timer, ThemeData theme) {
