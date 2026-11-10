@@ -615,7 +615,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text('تایمرهای فعالیت', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: _pageColor)),
+                ),
+                const SizedBox(height: 8),
                 if (_timers.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
